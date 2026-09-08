@@ -23,7 +23,7 @@ def run_code(payload: dict):
     language = payload.get("language", "python")
 
     response = requests.post(
-        "https://emkc.org/api/v2/piston/execute",
+    "http://127.0.0.1:2000/api/v2/execute",
         json={
             "language": language,
             "version": "*",

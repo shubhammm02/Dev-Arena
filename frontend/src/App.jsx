@@ -7,6 +7,7 @@ function App() {
   const [received, setReceived] = useState('')
   const [ws, setWs] = useState(null)
   const [code, setCode] = useState('print("Hello, Dev-Arena!")')
+  const [language, setLanguage] = useState('python')
   const [output, setOutput] = useState('')
   const [running, setRunning] = useState(false)
 
@@ -36,7 +37,7 @@ function App() {
       const res = await fetch('http://127.0.0.1:8000/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, language: 'python' })
+        body: JSON.stringify({ code, language })
       })
       const data = await res.json()
       setOutput(data.output || data.stderr || 'No output')
@@ -63,13 +64,19 @@ function App() {
 
       <hr />
       <h3>Code Editor (Monaco + Piston)</h3>
+      <select value={language} onChange={(e) => setLanguage(e.target.value)} style={{ marginBottom: '10px' }}>
+      <option value="python">Python</option>
+      <option value="c">C</option>
+      <option value="c++">C++</option>
+      <option value="java">Java</option>
+      </select>
       <Editor
-        height="300px"
-        defaultLanguage="python"
-        value={code}
-        onChange={(value) => setCode(value)}
-        theme="vs-dark"
-      />
+       height="300px"
+       language={language}
+       value={code}
+       onChange={(value) => setCode(value)}
+       theme="vs-dark"
+     />
       <button onClick={runCode} disabled={running} style={{ marginTop: '10px' }}>
         {running ? 'Running...' : 'Run'}
       </button>

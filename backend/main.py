@@ -7,7 +7,7 @@ import string
 from fastapi import Depends
 from sqlalchemy.orm import Session
 from database import SessionLocal
-from models import Room, Student, Submission
+from models import Room, Student, Submission, TeacherEdit
 
 def get_db():
     db = SessionLocal()
@@ -111,3 +111,21 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str):
                 await client.send_text(data)
     except Exception:
         connected_clients[room_code].remove(websocket)
+
+@app.post("/teacher-edit")
+def save_teacher_edit(payload: dict, db: Session = Depends(get_db)):
+    student_name = payload.get("student_name", "Unknown")
+    room_code = payload.get("room_code", "Unknown")
+    original_code = payload.get("original_code", "")
+    edited_code = payload.get("edited_code", "")
+
+    new_edit = TeacherEdit(
+        student_name=student_name,
+        room_code=room_code,
+        original_code=original_code,
+        edited_code=edited_code
+    )
+    db.add(new_edit)
+    db.commit()
+
+    return {"message": "Edit saved successfully"}

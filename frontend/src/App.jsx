@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import Editor from '@monaco-editor/react'
+import Editor, { DiffEditor } from '@monaco-editor/react'
 
 function App() {
   const [message, setMessage] = useState('Loading...')
@@ -14,10 +14,12 @@ function App() {
   const [studentName, setStudentName] = useState('')
   const [joined, setJoined] = useState(false)
   const [joinError, setJoinError] = useState('')
-  const [role, setRole] = useState(null) // null | 'student' | 'instructor'
+  const [role, setRole] = useState(null) 
   const [createdRoomCode, setCreatedRoomCode] = useState('')
   const [instructorName, setInstructorName] = useState('')
-  const [submissions, setSubmissions] = useState({}) // { student_name: { code, output } }
+  const [submissions, setSubmissions] = useState({})
+  const [editingStudent, setEditingStudent] = useState(null)
+  const [editedCode, setEditedCode] = useState('') 
 
     useEffect(() => {
     fetch('http://127.0.0.1:8000/')
@@ -83,21 +85,39 @@ const createRoom = async () => {
     }
 }
 
+const saveTeacherEdit = async (studentName) => {
+    try {
+      await fetch('http://127.0.0.1:8000/teacher-edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          student_name: studentName,
+          room_code: createdRoomCode,
+          original_code: submissions[studentName].code,
+          edited_code: editedCode
+        })
+      })
+      setEditingStudent(null)
+    } catch (err) {
+      console.error('Could not save edit')
+    }
+}
+
   const runCode = async () => {
     setRunning(true)
     setOutput('Running...')
     try {
             const res = await fetch('http://127.0.0.1:8000/run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code,
-          language,
-          student_name: role === 'student' ? studentName : instructorName,
-          room_code: role === 'student' ? roomCode : createdRoomCode
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+            code,
+            language,
+            student_name: role === 'student' ? studentName : instructorName,
+            room_code: role === 'student' ? roomCode : createdRoomCode
         })
       })
-      
+
       const data = await res.json()
       setOutput(data.output || data.stderr || 'No output')
 
@@ -130,13 +150,42 @@ const createRoom = async () => {
             <p style={{ textAlign: 'center' }}>No submissions yet.</p>
           ) : (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
-              {Object.entries(submissions).map(([name, sub]) => (
+                            {Object.entries(submissions).map(([name, sub]) => (
                 <div key={name} style={{ border: '1px solid #444', padding: '10px', width: '300px' }}>
                   <strong>{name}</strong>
                   <pre style={{ background: '#1e1e1e', color: '#0f0', padding: '8px', overflowX: 'auto' }}>
                     {sub.code}
                   </pre>
                   <p>Output: {sub.output}</p>
+                  <button onClick={() => {
+                    setEditingStudent(name)
+                    setEditedCode(sub.code)
+                  }}>
+                    Edit Code
+                  </button>
+
+                  {editingStudent === name && (
+                    <div style={{ marginTop: '10px' }}>
+                      <DiffEditor
+                        height="200px"
+                        original={sub.code}
+                        modified={editedCode}
+                        theme="vs-dark"
+                        onMount={(editor) => {
+                          const modifiedEditor = editor.getModifiedEditor()
+                          modifiedEditor.onDidChangeModelContent(() => {
+                            setEditedCode(modifiedEditor.getValue())
+                          })
+                        }}
+                      />
+                      <button onClick={() => saveTeacherEdit(name)} style={{ marginTop: '5px' }}>
+                        Save Edit
+                      </button>
+                      <button onClick={() => setEditingStudent(null)} style={{ marginTop: '5px', marginLeft: '5px' }}>
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

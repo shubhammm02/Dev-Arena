@@ -27,3 +27,13 @@ class Submission(Base):
     code = Column(String)
     output = Column(String)
     submitted_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class TeacherEdit(Base):
+    __tablename__ = "teacher_edits"
+
+    id = Column(Integer, primary_key=True, index=True)
+    student_name = Column(String)
+    room_code = Column(String, index=True)
+    original_code = Column(String)
+    edited_code = Column(String)
+    edited_at = Column(DateTime(timezone=True), server_default=func.now())

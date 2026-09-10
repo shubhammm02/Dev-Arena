@@ -79,16 +79,20 @@ def run_code(payload: dict):
     }
 
 # --- WebSocket setup (already working) ---
-connected_clients = []
+connected_clients = {}  # { room_code: [list of websockets] }
 
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+@app.websocket("/ws/{room_code}")
+async def websocket_endpoint(websocket: WebSocket, room_code: str):
     await websocket.accept()
-    connected_clients.append(websocket)
+
+    if room_code not in connected_clients:
+        connected_clients[room_code] = []
+    connected_clients[room_code].append(websocket)
+
     try:
         while True:
             data = await websocket.receive_text()
-            for client in connected_clients:
+            for client in connected_clients[room_code]:
                 await client.send_text(data)
     except Exception:
-        connected_clients.remove(websocket)
+        connected_clients[room_code].remove(websocket)

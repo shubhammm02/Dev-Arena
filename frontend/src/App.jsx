@@ -18,20 +18,25 @@ function App() {
   const [createdRoomCode, setCreatedRoomCode] = useState('')
   const [instructorName, setInstructorName] = useState('')
 
-  useEffect(() => {
+    useEffect(() => {
     fetch('http://127.0.0.1:8000/')
       .then(res => res.json())
       .then(data => setMessage(data.message))
       .catch(() => setMessage('Error: backend not reachable'))
+  }, [])
 
-    const socket = new WebSocket('ws://127.0.0.1:8000/ws')
+  useEffect(() => {
+    if (!joined) return
+
+    const activeRoomCode = role === 'student' ? roomCode : createdRoomCode
+    const socket = new WebSocket(`ws://127.0.0.1:8000/ws/${activeRoomCode}`)
     socket.onmessage = (event) => {
       setReceived(event.data)
     }
     setWs(socket)
 
     return () => socket.close()
-  }, [])
+  }, [joined])
 
   const sendMessage = () => {
     if (ws) ws.send(liveText)
@@ -59,6 +64,7 @@ const createRoom = async () => {
       })
       const data = await res.json()
       setCreatedRoomCode(data.room_code)
+      setJoined(true)
     } catch (err) {
       console.error('Could not create room')
     }
@@ -85,6 +91,11 @@ const createRoom = async () => {
     <div>
       <h1>Dev-Arena</h1>
       <p>{message}</p>
+            {joined && role === 'instructor' && (
+        <p style={{ textAlign: 'center', fontSize: '18px' }}>
+          Room Code: <strong>{createdRoomCode}</strong>
+        </p>
+      )}
 
             {!joined ? (
         <div>

@@ -9,3 +9,11 @@ class Room(Base):
     room_code = Column(String, unique=True, index=True)
     instructor_name = Column(String)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Student(Base):
+    __tablename__ = "students"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    room_code = Column(String, index=True)
+    joined_at = Column(DateTime(timezone=True), server_default=func.now())

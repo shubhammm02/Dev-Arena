@@ -2,13 +2,12 @@ from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 import requests
 from database import engine, Base
-from models import Room
 import random
 import string
 from fastapi import Depends
 from sqlalchemy.orm import Session
 from database import SessionLocal
-from models import Room
+from models import Room, Student
 
 def get_db():
     db = SessionLocal()
@@ -46,11 +45,17 @@ def read_root():
     return {"message": "Dev-Arena backend is alive"}
 
 @app.get("/join-room/{room_code}")
-def join_room(room_code: str, db: Session = Depends(get_db)):
+def join_room(room_code: str, student_name: str, db: Session = Depends(get_db)):
     room = db.query(Room).filter(Room.room_code == room_code).first()
     if not room:
         return {"error": "Room not found"}
-    return {"room_code": room.room_code, "instructor_name": room.instructor_name}
+
+    new_student = Student(name=student_name, room_code=room_code)
+    db.add(new_student)
+    db.commit()
+    db.refresh(new_student)
+
+    return {"room_code": room.room_code, "instructor_name": room.instructor_name, "student_id": new_student.id}
 
 # --- New: Run code via Piston ---
 @app.post("/run")

@@ -45,6 +45,13 @@ def create_room(instructor_name: str, db: Session = Depends(get_db)):
 def read_root():
     return {"message": "Dev-Arena backend is alive"}
 
+@app.get("/join-room/{room_code}")
+def join_room(room_code: str, db: Session = Depends(get_db)):
+    room = db.query(Room).filter(Room.room_code == room_code).first()
+    if not room:
+        return {"error": "Room not found"}
+    return {"room_code": room.room_code, "instructor_name": room.instructor_name}
+
 # --- New: Run code via Piston ---
 @app.post("/run")
 def run_code(payload: dict):

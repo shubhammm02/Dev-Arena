@@ -7,7 +7,7 @@ import string
 from fastapi import Depends
 from sqlalchemy.orm import Session
 from database import SessionLocal
-from models import Room, Student
+from models import Room, Student, Submission
 
 def get_db():
     db = SessionLocal()
@@ -58,10 +58,13 @@ def join_room(room_code: str, student_name: str, db: Session = Depends(get_db)):
     return {"room_code": room.room_code, "instructor_name": room.instructor_name, "student_id": new_student.id}
 
 # --- New: Run code via Piston ---
+
 @app.post("/run")
-def run_code(payload: dict):
+def run_code(payload: dict, db: Session = Depends(get_db)):
     code = payload.get("code", "")
     language = payload.get("language", "python")
+    student_name = payload.get("student_name", "Unknown")
+    room_code = payload.get("room_code", "Unknown")
 
     response = requests.post(
     "http://127.0.0.1:2000/api/v2/execute",
@@ -73,6 +76,18 @@ def run_code(payload: dict):
     )
     result = response.json()
     print("PISTON RESPONSE:", result)
+
+    output_text = result.get("run", {}).get("output", "") or result.get("run", {}).get("stderr", "")
+
+    new_submission = Submission(
+        student_name=student_name,
+        room_code=room_code,
+        code=code,
+        output=output_text
+    )
+    db.add(new_submission)
+    db.commit()
+
     return {
         "output": result.get("run", {}).get("output", ""),
         "stderr": result.get("run", {}).get("stderr", "")

@@ -17,3 +17,13 @@ class Student(Base):
     name = Column(String)
     room_code = Column(String, index=True)
     joined_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Submission(Base):
+    __tablename__ = "submissions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    student_name = Column(String)
+    room_code = Column(String, index=True)
+    code = Column(String)
+    output = Column(String)
+    submitted_at = Column(DateTime(timezone=True), server_default=func.now())

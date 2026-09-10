@@ -17,6 +17,7 @@ function App() {
   const [role, setRole] = useState(null) // null | 'student' | 'instructor'
   const [createdRoomCode, setCreatedRoomCode] = useState('')
   const [instructorName, setInstructorName] = useState('')
+  const [submissions, setSubmissions] = useState({}) // { student_name: { code, output } }
 
     useEffect(() => {
     fetch('http://127.0.0.1:8000/')
@@ -25,13 +26,25 @@ function App() {
       .catch(() => setMessage('Error: backend not reachable'))
   }, [])
 
-  useEffect(() => {
+    useEffect(() => {
     if (!joined) return
 
     const activeRoomCode = role === 'student' ? roomCode : createdRoomCode
     const socket = new WebSocket(`ws://127.0.0.1:8000/ws/${activeRoomCode}`)
     socket.onmessage = (event) => {
-      setReceived(event.data)
+      try {
+        const parsed = JSON.parse(event.data)
+        if (parsed.type === 'submission') {
+          setSubmissions(prev => ({
+            ...prev,
+            [parsed.student_name]: { code: parsed.code, output: parsed.output }
+          }))
+        } else {
+          setReceived(event.data)
+        }
+      } catch (e) {
+        setReceived(event.data)
+      }
     }
     setWs(socket)
 
@@ -74,13 +87,28 @@ const createRoom = async () => {
     setRunning(true)
     setOutput('Running...')
     try {
-      const res = await fetch('http://127.0.0.1:8000/run', {
+            const res = await fetch('http://127.0.0.1:8000/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, language })
+        body: JSON.stringify({
+          code,
+          language,
+          student_name: role === 'student' ? studentName : instructorName,
+          room_code: role === 'student' ? roomCode : createdRoomCode
+        })
       })
+      
       const data = await res.json()
       setOutput(data.output || data.stderr || 'No output')
+
+          if (ws && role === 'student') {
+          ws.send(JSON.stringify({
+          type: 'submission',
+          student_name: studentName,
+          code: code,
+          output: data.output || data.stderr || 'No output'
+        }))
+      }
     } catch (err) {
       setOutput('Error: could not reach backend')
     }
@@ -91,10 +119,29 @@ const createRoom = async () => {
     <div>
       <h1>Dev-Arena</h1>
       <p>{message}</p>
-            {joined && role === 'instructor' && (
-        <p style={{ textAlign: 'center', fontSize: '18px' }}>
-          Room Code: <strong>{createdRoomCode}</strong>
-        </p>
+                {joined && role === 'instructor' && (
+        <div>
+          <p style={{ textAlign: 'center', fontSize: '18px' }}>
+            Room Code: <strong>{createdRoomCode}</strong>
+          </p>
+
+          <h3 style={{ textAlign: 'center' }}>Live Student Submissions</h3>
+          {Object.keys(submissions).length === 0 ? (
+            <p style={{ textAlign: 'center' }}>No submissions yet.</p>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+              {Object.entries(submissions).map(([name, sub]) => (
+                <div key={name} style={{ border: '1px solid #444', padding: '10px', width: '300px' }}>
+                  <strong>{name}</strong>
+                  <pre style={{ background: '#1e1e1e', color: '#0f0', padding: '8px', overflowX: 'auto' }}>
+                    {sub.code}
+                  </pre>
+                  <p>Output: {sub.output}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
             {!joined ? (

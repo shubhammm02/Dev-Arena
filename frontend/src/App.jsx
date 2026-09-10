@@ -10,6 +10,10 @@ function App() {
   const [language, setLanguage] = useState('python')
   const [output, setOutput] = useState('')
   const [running, setRunning] = useState(false)
+  const [roomCode, setRoomCode] = useState('')
+  const [studentName, setStudentName] = useState('')
+  const [joined, setJoined] = useState(false)
+  const [joinError, setJoinError] = useState('')
 
   useEffect(() => {
     fetch('http://127.0.0.1:8000/')
@@ -30,6 +34,21 @@ function App() {
     if (ws) ws.send(liveText)
   }
 
+  const joinRoom = async () => {
+    setJoinError('')
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/join-room/${roomCode}?student_name=${studentName}`)
+      const data = await res.json()
+      if (data.error) {
+        setJoinError(data.error)
+      } else {
+        setJoined(true)
+      }
+    } catch (err) {
+      setJoinError('Could not reach backend')
+    }
+}
+
   const runCode = async () => {
     setRunning(true)
     setOutput('Running...')
@@ -47,10 +66,29 @@ function App() {
     setRunning(false)
   }
 
-  return (
+    return (
     <div>
       <h1>Dev-Arena</h1>
       <p>{message}</p>
+
+      {!joined ? (
+        <div>
+          <h3>Join a Room</h3>
+          <input
+            value={roomCode}
+            onChange={(e) => setRoomCode(e.target.value)}
+            placeholder="Room Code"
+          />
+          <input
+            value={studentName}
+            onChange={(e) => setStudentName(e.target.value)}
+            placeholder="Your Name"
+          />
+          <button onClick={joinRoom}>Join</button>
+          {joinError && <p style={{ color: 'red' }}>{joinError}</p>}
+        </div>
+      ) : (
+        <>
 
       <hr />
       <h3>WebSocket Live Test</h3>
@@ -82,7 +120,9 @@ function App() {
       </button>
       <pre style={{ background: '#1e1e1e', color: '#0f0', padding: '10px', marginTop: '10px' }}>
         {output}
-      </pre>
+            </pre>
+        </>
+      )}
     </div>
   )
 }

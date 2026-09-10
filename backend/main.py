@@ -1,6 +1,26 @@
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 import requests
+from database import engine, Base
+from models import Room
+import random
+import string
+from fastapi import Depends
+from sqlalchemy.orm import Session
+from database import SessionLocal
+from models import Room
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+def generate_room_code(length=6):
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
@@ -11,6 +31,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.post("/create-room")
+def create_room(instructor_name: str, db: Session = Depends(get_db)):
+    room_code = generate_room_code()
+    new_room = Room(room_code=room_code, instructor_name=instructor_name)
+    db.add(new_room)
+    db.commit()
+    db.refresh(new_room)
+    return {"room_code": new_room.room_code, "instructor_name": new_room.instructor_name}
 
 @app.get("/")
 def read_root():

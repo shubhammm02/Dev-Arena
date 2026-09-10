@@ -68,7 +68,3 @@ Student Browser                Instructor Browser
 🔲 Instructor ability to edit student-submitted code (via Monaco Diff Editor, saved separately without overwriting the original)
 🔲 UI/UX design pass (current layout is functional, not final)
 🔲 Deployment (Netlify + Render)
-
-## License
-
-MIT

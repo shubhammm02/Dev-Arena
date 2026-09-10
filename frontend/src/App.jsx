@@ -20,6 +20,7 @@ function App() {
   const [submissions, setSubmissions] = useState({})
   const [editingStudent, setEditingStudent] = useState(null)
   const [editedCode, setEditedCode] = useState('') 
+  const [selectedStudent, setSelectedStudent] = useState(null)
 
     useEffect(() => {
     fetch('http://127.0.0.1:8000/')
@@ -36,12 +37,15 @@ function App() {
     socket.onmessage = (event) => {
       try {
         const parsed = JSON.parse(event.data)
-        if (parsed.type === 'submission') {
+
+                if (parsed.type === 'submission') {
           setSubmissions(prev => ({
             ...prev,
-            [parsed.student_name]: { code: parsed.code, output: parsed.output }
+            [parsed.student_name]: { code: parsed.code, output: parsed.output, status: parsed.status }
           }))
-        } else {
+        }
+        
+        else {
           setReceived(event.data)
         }
       } catch (e) {
@@ -121,14 +125,16 @@ const saveTeacherEdit = async (studentName) => {
       const data = await res.json()
       setOutput(data.output || data.stderr || 'No output')
 
-          if (ws && role === 'student') {
-          ws.send(JSON.stringify({
+        if (ws && role === 'student') {
+        ws.send(JSON.stringify({
           type: 'submission',
           student_name: studentName,
           code: code,
-          output: data.output || data.stderr || 'No output'
+          output: data.output || data.stderr || 'No output',
+          status: data.stderr ? 'error' : 'ok'
         }))
       }
+
     } catch (err) {
       setOutput('Error: could not reach backend')
     }
@@ -145,51 +151,93 @@ const saveTeacherEdit = async (studentName) => {
             Room Code: <strong>{createdRoomCode}</strong>
           </p>
 
-          <h3 style={{ textAlign: 'center' }}>Live Student Submissions</h3>
-          {Object.keys(submissions).length === 0 ? (
-            <p style={{ textAlign: 'center' }}>No submissions yet.</p>
-          ) : (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
-                            {Object.entries(submissions).map(([name, sub]) => (
-                <div key={name} style={{ border: '1px solid #444', padding: '10px', width: '300px' }}>
-                  <strong>{name}</strong>
-                  <pre style={{ background: '#1e1e1e', color: '#0f0', padding: '8px', overflowX: 'auto' }}>
-                    {sub.code}
-                  </pre>
-                  <p>Output: {sub.output}</p>
+                    <div style={{ background: '#0D1117', border: '1px solid #30363D', borderRadius: '10px', padding: '20px', maxWidth: '500px', margin: '0 auto', fontFamily: 'sans-serif' }}>
+
+            {!selectedStudent ? (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '11px', color: '#8B949E' }}>
+                  <span><span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3FB950', display: 'inline-block', marginRight: '4px' }}></span>Ran fine</span>
+                  <span><span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#F85149', display: 'inline-block', marginRight: '4px' }}></span>Error</span>
+                </div>
+                <p style={{ color: '#E6EDF3', fontSize: '15px', fontWeight: 'bold', margin: '0 0 14px' }}>
+                  {Object.keys(submissions).length} student{Object.keys(submissions).length !== 1 ? 's' : ''} connected
+                </p>
+
+                {Object.keys(submissions).length === 0 ? (
+                  <p style={{ color: '#8B949E' }}>No submissions yet.</p>
+                ) : (
+                  Object.entries(submissions).map(([name, sub]) => (
+                    <div
+                      key={name}
+                      onClick={() => setSelectedStudent(name)}
+                      style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '10px 8px', borderBottom: '0.5px solid #21262D', cursor: 'pointer'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{
+                          width: '7px', height: '7px', borderRadius: '50%',
+                          background: sub.status === 'error' ? '#F85149' : '#3FB950',
+                          display: 'inline-block'
+                        }}></span>
+                        <span style={{ color: '#E6EDF3', fontSize: '13px' }}>{name}</span>
+                      </div>
+                      <span style={{ color: '#8B949E' }}>›</span>
+                    </div>
+                  ))
+                )}
+              </>
+            ) : (
+              <div>
+                <div
+                  onClick={() => { setSelectedStudent(null); setEditingStudent(null) }}
+                  style={{ color: '#8B949E', fontSize: '12px', cursor: 'pointer', marginBottom: '14px' }}
+                >
+                  ‹ Back to all students
+                </div>
+
+                <p style={{ color: '#E6EDF3', fontSize: '14px', fontWeight: 'bold', marginBottom: '10px' }}>
+                  {selectedStudent}
+                </p>
+
+                <pre style={{ background: '#161B22', color: '#0f0', padding: '10px', borderRadius: '6px', overflowX: 'auto', fontSize: '13px' }}>
+                  {submissions[selectedStudent].code}
+                </pre>
+                <p style={{ color: '#8B949E', fontSize: '13px' }}>Output: {submissions[selectedStudent].output}</p>
+
+                {editingStudent !== selectedStudent ? (
                   <button onClick={() => {
-                    setEditingStudent(name)
-                    setEditedCode(sub.code)
+                    setEditingStudent(selectedStudent)
+                    setEditedCode(submissions[selectedStudent].code)
                   }}>
                     Edit Code
                   </button>
-
-                  {editingStudent === name && (
-                    <div style={{ marginTop: '10px' }}>
-                      <DiffEditor
-                        height="200px"
-                        original={sub.code}
-                        modified={editedCode}
-                        theme="vs-dark"
-                        onMount={(editor) => {
-                          const modifiedEditor = editor.getModifiedEditor()
-                          modifiedEditor.onDidChangeModelContent(() => {
-                            setEditedCode(modifiedEditor.getValue())
-                          })
-                        }}
-                      />
-                      <button onClick={() => saveTeacherEdit(name)} style={{ marginTop: '5px' }}>
-                        Save Edit
-                      </button>
-                      <button onClick={() => setEditingStudent(null)} style={{ marginTop: '5px', marginLeft: '5px' }}>
-                        Cancel
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+                ) : (
+                  <div style={{ marginTop: '10px' }}>
+                    <DiffEditor
+                      height="200px"
+                      original={submissions[selectedStudent].code}
+                      modified={editedCode}
+                      theme="vs-dark"
+                      onMount={(editor) => {
+                        const modifiedEditor = editor.getModifiedEditor()
+                        modifiedEditor.onDidChangeModelContent(() => {
+                          setEditedCode(modifiedEditor.getValue())
+                        })
+                      }}
+                    />
+                    <button onClick={() => saveTeacherEdit(selectedStudent)} style={{ marginTop: '5px' }}>
+                      Save Edit
+                    </button>
+                    <button onClick={() => setEditingStudent(null)} style={{ marginTop: '5px', marginLeft: '5px' }}>
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

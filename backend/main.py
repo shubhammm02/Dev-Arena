@@ -77,13 +77,17 @@ def run_code(payload: dict, db: Session = Depends(get_db)):
     result = response.json()
     print("PISTON RESPONSE:", result)
 
-    output_text = result.get("run", {}).get("output", "") or result.get("run", {}).get("stderr", "")
+    stdout = result.get("run", {}).get("output", "")
+    stderr = result.get("run", {}).get("stderr", "")
+    output_text = stdout or stderr
+    status = "error" if stderr else "ok"
 
     new_submission = Submission(
         student_name=student_name,
         room_code=room_code,
         code=code,
-        output=output_text
+        output=output_text,
+        status=status
     )
     db.add(new_submission)
     db.commit()

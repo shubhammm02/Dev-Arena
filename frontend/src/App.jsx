@@ -14,6 +14,9 @@ function App() {
   const [studentName, setStudentName] = useState('')
   const [joined, setJoined] = useState(false)
   const [joinError, setJoinError] = useState('')
+  const [role, setRole] = useState(null) // null | 'student' | 'instructor'
+  const [createdRoomCode, setCreatedRoomCode] = useState('')
+  const [instructorName, setInstructorName] = useState('')
 
   useEffect(() => {
     fetch('http://127.0.0.1:8000/')
@@ -49,6 +52,18 @@ function App() {
     }
 }
 
+const createRoom = async () => {
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/create-room?instructor_name=${instructorName}`, {
+        method: 'POST'
+      })
+      const data = await res.json()
+      setCreatedRoomCode(data.room_code)
+    } catch (err) {
+      console.error('Could not create room')
+    }
+}
+
   const runCode = async () => {
     setRunning(true)
     setOutput('Running...')
@@ -71,21 +86,44 @@ function App() {
       <h1>Dev-Arena</h1>
       <p>{message}</p>
 
-      {!joined ? (
+            {!joined ? (
         <div>
-          <h3>Join a Room</h3>
-          <input
-            value={roomCode}
-            onChange={(e) => setRoomCode(e.target.value)}
-            placeholder="Room Code"
-          />
-          <input
-            value={studentName}
-            onChange={(e) => setStudentName(e.target.value)}
-            placeholder="Your Name"
-          />
-          <button onClick={joinRoom}>Join</button>
-          {joinError && <p style={{ color: 'red' }}>{joinError}</p>}
+          {!role ? (
+            <div>
+              <h3>I am a...</h3>
+              <button onClick={() => setRole('student')}>Student</button>
+              <button onClick={() => setRole('instructor')}>Instructor</button>
+            </div>
+          ) : role === 'student' ? (
+            <div>
+              <h3>Join a Room</h3>
+              <input
+                value={roomCode}
+                onChange={(e) => setRoomCode(e.target.value)}
+                placeholder="Room Code"
+              />
+              <input
+                value={studentName}
+                onChange={(e) => setStudentName(e.target.value)}
+                placeholder="Your Name"
+              />
+              <button onClick={joinRoom}>Join</button>
+              {joinError && <p style={{ color: 'red' }}>{joinError}</p>}
+            </div>
+          ) : (
+            <div>
+              <h3>Create a Room</h3>
+              <input
+                value={instructorName}
+                onChange={(e) => setInstructorName(e.target.value)}
+                placeholder="Your Name"
+              />
+              <button onClick={createRoom}>Create Room</button>
+              {createdRoomCode && (
+                <p>Room Created! Share this code: <strong>{createdRoomCode}</strong></p>
+              )}
+            </div>
+          )}
         </div>
       ) : (
         <>

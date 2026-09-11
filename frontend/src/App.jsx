@@ -34,20 +34,49 @@ function App() {
 
     const activeRoomCode = role === 'student' ? roomCode : createdRoomCode
     const socket = new WebSocket(`ws://127.0.0.1:8000/ws/${activeRoomCode}`)
+
+    socket.onopen = () => {
+      if (role === 'student') {
+        socket.send(JSON.stringify({
+          type: 'join',
+          student_name: studentName
+        }))
+      }
+    }
+
     socket.onmessage = (event) => {
       try {
         const parsed = JSON.parse(event.data)
 
-                if (parsed.type === 'submission') {
+                        if (parsed.type === 'submission') {
           setSubmissions(prev => ({
             ...prev,
             [parsed.student_name]: { code: parsed.code, output: parsed.output, status: parsed.status }
           }))
         }
+
+                else if (parsed.type === 'join') {
+          setSubmissions(prev => {
+            if (prev[parsed.student_name]) return prev
+            return {
+              ...prev,
+              [parsed.student_name]: { code: '', output: '', status: 'none' }
+            }
+          })
+        }
+
+        else if (parsed.type === 'leave') {
+          setSubmissions(prev => {
+            const updated = { ...prev }
+            delete updated[parsed.student_name]
+            return updated
+          })
+        }
         
         else {
           setReceived(event.data)
         }
+        
       } catch (e) {
         setReceived(event.data)
       }
@@ -155,10 +184,12 @@ const saveTeacherEdit = async (studentName) => {
 
             {!selectedStudent ? (
               <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '11px', color: '#8B949E' }}>
-                  <span><span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3FB950', display: 'inline-block', marginRight: '4px' }}></span>Ran fine</span>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '11px', color: '#8B949E' }}>
+                  <span><span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3FB950', display: 'inline-block', marginRight: '4px' }}></span>Success</span>
                   <span><span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#F85149', display: 'inline-block', marginRight: '4px' }}></span>Error</span>
+                  <span><span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#484F58', display: 'inline-block', marginRight: '4px' }}></span>Not run yet</span>
                 </div>
+
                 <p style={{ color: '#E6EDF3', fontSize: '15px', fontWeight: 'bold', margin: '0 0 14px' }}>
                   {Object.keys(submissions).length} student{Object.keys(submissions).length !== 1 ? 's' : ''} connected
                 </p>
@@ -176,9 +207,9 @@ const saveTeacherEdit = async (studentName) => {
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{
+                                                <span style={{
                           width: '7px', height: '7px', borderRadius: '50%',
-                          background: sub.status === 'error' ? '#F85149' : '#3FB950',
+                          background: sub.status === 'error' ? '#F85149' : sub.status === 'none' ? '#484F58' : '#3FB950',
                           display: 'inline-block'
                         }}></span>
                         <span style={{ color: '#E6EDF3', fontSize: '13px' }}>{name}</span>
@@ -283,37 +314,31 @@ const saveTeacherEdit = async (studentName) => {
       ) : (
         <>
 
-      <hr />
-      <h3>WebSocket Live Test</h3>
-      <input
-        value={liveText}
-        onChange={(e) => setLiveText(e.target.value)}
-        placeholder="Type something..."
-      />
-      <button onClick={sendMessage}>Send</button>
-      <p>Received live: <strong>{received}</strong></p>
-
-      <hr />
-      <h3>Code Editor (Monaco + Piston)</h3>
-      <select value={language} onChange={(e) => setLanguage(e.target.value)} style={{ marginBottom: '10px' }}>
-      <option value="python">Python</option>
-      <option value="c">C</option>
-      <option value="c++">C++</option>
-      <option value="java">Java</option>
-      </select>
-      <Editor
-       height="300px"
-       language={language}
-       value={code}
-       onChange={(value) => setCode(value)}
-       theme="vs-dark"
-     />
-      <button onClick={runCode} disabled={running} style={{ marginTop: '10px' }}>
-        {running ? 'Running...' : 'Run'}
-      </button>
-      <pre style={{ background: '#1e1e1e', color: '#0f0', padding: '10px', marginTop: '10px' }}>
-        {output}
-            </pre>
+            {role === 'student' && (
+        <>
+          <hr />
+          <h3>Code Editor (Monaco + Piston)</h3>
+          <select value={language} onChange={(e) => setLanguage(e.target.value)} style={{ marginBottom: '10px' }}>
+          <option value="python">Python</option>
+          <option value="c">C</option>
+          <option value="c++">C++</option>
+          <option value="java">Java</option>
+          </select>
+          <Editor
+           height="300px"
+           language={language}
+           value={code}
+           onChange={(value) => setCode(value)}
+           theme="vs-dark"
+         />
+          <button onClick={runCode} disabled={running} style={{ marginTop: '10px' }}>
+            {running ? 'Running...' : 'Run'}
+          </button>
+          <pre style={{ background: '#1e1e1e', color: '#0f0', padding: '10px', marginTop: '10px' }}>
+            {output}
+          </pre>
+        </>
+      )}
         </>
       )}
     </div>

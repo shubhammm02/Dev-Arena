@@ -1,6 +1,7 @@
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 import requests
+import json
 from database import engine, Base
 import random
 import string
@@ -108,13 +109,31 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str):
         connected_clients[room_code] = []
     connected_clients[room_code].append(websocket)
 
+    connected_student_name = None
+
     try:
         while True:
             data = await websocket.receive_text()
+
+            try:
+                parsed = json.loads(data)
+                if parsed.get("type") == "join":
+                    connected_student_name = parsed.get("student_name")
+            except Exception:
+                pass
+
             for client in connected_clients[room_code]:
                 await client.send_text(data)
     except Exception:
         connected_clients[room_code].remove(websocket)
+
+        if connected_student_name:
+            leave_message = json.dumps({
+                "type": "leave",
+                "student_name": connected_student_name
+            })
+            for client in connected_clients[room_code]:
+                await client.send_text(leave_message)
 
 @app.post("/teacher-edit")
 def save_teacher_edit(payload: dict, db: Session = Depends(get_db)):

@@ -21,6 +21,7 @@ function App() {
   const [editingStudent, setEditingStudent] = useState(null)
   const [editedCode, setEditedCode] = useState('') 
   const [selectedStudent, setSelectedStudent] = useState(null)
+  const [pendingTeacherEdit, setPendingTeacherEdit] = useState(null)
 
     useEffect(() => {
     fetch('http://127.0.0.1:8000/')
@@ -88,6 +89,12 @@ function App() {
             return updated
           })
         }
+
+        else if (parsed.type === 'teacher_edit') {
+          if (role === 'student' && parsed.student_name === studentName) {
+            setPendingTeacherEdit(parsed.edited_code)
+          }
+        }
         
         else {
           setReceived(event.data)
@@ -148,6 +155,15 @@ const saveTeacherEdit = async (studentName) => {
           edited_code: editedCode
         })
       })
+
+      if (ws) {
+        ws.send(JSON.stringify({
+          type: 'teacher_edit',
+          student_name: studentName,
+          edited_code: editedCode
+        }))
+      }
+
       setEditingStudent(null)
     } catch (err) {
       console.error('Could not save edit')
@@ -332,10 +348,28 @@ const saveTeacherEdit = async (studentName) => {
       ) : (
         <>
 
-            {role === 'student' && (
+        {role === 'student' && (
         <>
           <hr />
           <h3>Code Editor (Monaco + Piston)</h3>
+
+          {pendingTeacherEdit && (
+            <div style={{ background: '#3D2E00', border: '1px solid #D29922', borderRadius: '6px', padding: '10px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: '#D29922', fontSize: '13px' }}>Your instructor updated your code</span>
+              <div>
+                <button onClick={() => {
+                  setCode(pendingTeacherEdit)
+                  setPendingTeacherEdit(null)
+                }} style={{ marginRight: '5px' }}>
+                  Apply
+                </button>
+                <button onClick={() => setPendingTeacherEdit(null)}>
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
+
           <select value={language} onChange={(e) => setLanguage(e.target.value)} style={{ marginBottom: '10px' }}>
           <option value="python">Python</option>
           <option value="c">C</option>

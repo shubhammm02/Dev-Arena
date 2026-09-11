@@ -29,6 +29,22 @@ function App() {
       .catch(() => setMessage('Error: backend not reachable'))
   }, [])
 
+      useEffect(() => {
+        const savedRole = sessionStorage.getItem('devarena_role')
+        const savedRoom = sessionStorage.getItem('devarena_room')
+
+    if (savedRole === 'instructor' && savedRoom) {
+      setRole('instructor')
+      setCreatedRoomCode(savedRoom)
+      setJoined(true)
+
+      fetch(`http://127.0.0.1:8000/room-status/${savedRoom}`)
+        .then(res => res.json())
+        .then(data => setSubmissions(data))
+        .catch(() => console.error('Could not restore room status'))
+    }
+  }, [])
+
     useEffect(() => {
     if (!joined) return
 
@@ -76,7 +92,7 @@ function App() {
         else {
           setReceived(event.data)
         }
-        
+
       } catch (e) {
         setReceived(event.data)
       }
@@ -113,6 +129,8 @@ const createRoom = async () => {
       const data = await res.json()
       setCreatedRoomCode(data.room_code)
       setJoined(true)
+      sessionStorage.setItem('devarena_role', 'instructor')
+      sessionStorage.setItem('devarena_room', data.room_code)
     } catch (err) {
       console.error('Could not create room')
     }
@@ -184,10 +202,10 @@ const saveTeacherEdit = async (studentName) => {
 
             {!selectedStudent ? (
               <>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '11px', color: '#8B949E' }}>
-                  <span><span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3FB950', display: 'inline-block', marginRight: '4px' }}></span>Success</span>
-                  <span><span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#F85149', display: 'inline-block', marginRight: '4px' }}></span>Error</span>
-                  <span><span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#484F58', display: 'inline-block', marginRight: '4px' }}></span>Not run yet</span>
+               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '11px', color: '#8B949E' }}>
+                  <span><span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3FB950', display: 'inline-block', marginRight: '4px' }}></span>{Object.values(submissions).filter(s => s.status !== 'error' && s.status !== 'none').length} Success</span>
+                  <span><span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#F85149', display: 'inline-block', marginRight: '4px' }}></span>{Object.values(submissions).filter(s => s.status === 'error').length} Error</span>
+                  <span><span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#484F58', display: 'inline-block', marginRight: '4px' }}></span>{Object.values(submissions).filter(s => s.status === 'none').length} Not run yet</span>
                 </div>
 
                 <p style={{ color: '#E6EDF3', fontSize: '15px', fontWeight: 'bold', margin: '0 0 14px' }}>

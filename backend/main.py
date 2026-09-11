@@ -58,6 +58,29 @@ def join_room(room_code: str, student_name: str, db: Session = Depends(get_db)):
 
     return {"room_code": room.room_code, "instructor_name": room.instructor_name, "student_id": new_student.id}
 
+@app.get("/room-status/{room_code}")
+def room_status(room_code: str, db: Session = Depends(get_db)):
+    all_submissions = db.query(Submission).filter(Submission.room_code == room_code).order_by(Submission.submitted_at).all()
+
+    latest_per_student = {}
+    for sub in all_submissions:
+        latest_per_student[sub.student_name] = {
+            "code": sub.code,
+            "output": sub.output,
+            "status": sub.status
+        }
+
+    currently_connected = connected_students.get(room_code, set())
+
+    result = {}
+    for name in currently_connected:
+        if name in latest_per_student:
+            result[name] = latest_per_student[name]
+        else:
+            result[name] = {"code": "", "output": "", "status": "none"}
+
+    return result
+
 # --- New: Run code via Piston ---
 
 @app.post("/run")
@@ -100,6 +123,7 @@ def run_code(payload: dict, db: Session = Depends(get_db)):
 
 # --- WebSocket setup (already working) ---
 connected_clients = {}  # { room_code: [list of websockets] }
+connected_students = {}  # { room_code: set of student names currently connected }
 
 @app.websocket("/ws/{room_code}")
 async def websocket_endpoint(websocket: WebSocket, room_code: str):
@@ -108,6 +132,9 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str):
     if room_code not in connected_clients:
         connected_clients[room_code] = []
     connected_clients[room_code].append(websocket)
+
+    if room_code not in connected_students:
+        connected_students[room_code] = set()
 
     connected_student_name = None
 
@@ -119,6 +146,7 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str):
                 parsed = json.loads(data)
                 if parsed.get("type") == "join":
                     connected_student_name = parsed.get("student_name")
+                    connected_students[room_code].add(connected_student_name)
             except Exception:
                 pass
 
@@ -128,6 +156,8 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str):
         connected_clients[room_code].remove(websocket)
 
         if connected_student_name:
+            connected_students[room_code].discard(connected_student_name)
+
             leave_message = json.dumps({
                 "type": "leave",
                 "student_name": connected_student_name

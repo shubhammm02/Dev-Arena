@@ -22,6 +22,7 @@ function App() {
   const [editedCode, setEditedCode] = useState('') 
   const [selectedStudent, setSelectedStudent] = useState(null)
   const [pendingTeacherEdit, setPendingTeacherEdit] = useState(null)
+  const [raisedHands, setRaisedHands] = useState({})
 
     useEffect(() => {
     fetch('http://127.0.0.1:8000/')
@@ -95,7 +96,26 @@ function App() {
             setPendingTeacherEdit(parsed.edited_code)
           }
         }
+
+        else if (parsed.type === 'raise_hand') {
+          setRaisedHands(prev => ({
+            ...prev,
+            [parsed.student_name]: true
+          }))
+        }
         
+        else if (parsed.type === 'live_code') {
+          setSubmissions(prev => ({
+            ...prev,
+            [parsed.student_name]: {
+              ...(prev[parsed.student_name] || {}),
+              code: parsed.code,
+              output: (prev[parsed.student_name] || {}).output || '',
+              status: (prev[parsed.student_name] || {}).status || 'none'
+            }
+          }))
+        }
+
         else {
           setReceived(event.data)
         }
@@ -234,19 +254,28 @@ const saveTeacherEdit = async (studentName) => {
                   Object.entries(submissions).map(([name, sub]) => (
                     <div
                       key={name}
-                      onClick={() => setSelectedStudent(name)}
+                      onClick={() => {
+                        setSelectedStudent(name)
+                        setRaisedHands(prev => {
+                          const updated = { ...prev }
+                          delete updated[name]
+                          return updated
+                        })
+                      }}
+
                       style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         padding: '10px 8px', borderBottom: '0.5px solid #21262D', cursor: 'pointer'
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                <span style={{
+                          <span style={{
                           width: '7px', height: '7px', borderRadius: '50%',
                           background: sub.status === 'error' ? '#F85149' : sub.status === 'none' ? '#484F58' : '#3FB950',
                           display: 'inline-block'
                         }}></span>
                         <span style={{ color: '#E6EDF3', fontSize: '13px' }}>{name}</span>
+                        {raisedHands[name] && <span>🖐️</span>}
                       </div>
                       <span style={{ color: '#8B949E' }}>›</span>
                     </div>
@@ -353,6 +382,17 @@ const saveTeacherEdit = async (studentName) => {
           <hr />
           <h3>Code Editor (Monaco + Piston)</h3>
 
+          <button onClick={() => {
+            if (ws) {
+              ws.send(JSON.stringify({
+                type: 'raise_hand',
+                student_name: studentName
+              }))
+            }
+          }} style={{ marginBottom: '10px', background: '#1F6FEB', color: 'white' }}>
+            🖐️ Need Help?
+          </button>
+
           {pendingTeacherEdit && (
             <div style={{ background: '#3D2E00', border: '1px solid #D29922', borderRadius: '6px', padding: '10px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ color: '#D29922', fontSize: '13px' }}>Your instructor updated your code</span>
@@ -380,7 +420,19 @@ const saveTeacherEdit = async (studentName) => {
            height="300px"
            language={language}
            value={code}
-           onChange={(value) => setCode(value)}
+           onChange={(value) => {
+             setCode(value)
+             if (ws) {
+               clearTimeout(window.liveTypingTimeout)
+               window.liveTypingTimeout = setTimeout(() => {
+                 ws.send(JSON.stringify({
+                   type: 'live_code',
+                   student_name: studentName,
+                   code: value
+                 }))
+               }, 800)
+             }
+           }}
            theme="vs-dark"
          />
           <button onClick={runCode} disabled={running} style={{ marginTop: '10px' }}>

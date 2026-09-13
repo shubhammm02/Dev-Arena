@@ -3,6 +3,7 @@ import Editor, { DiffEditor } from '@monaco-editor/react'
 
 function App() {
   const [message, setMessage] = useState('Loading...')
+  const [backendOk, setBackendOk] = useState(true)
   const [liveText, setLiveText] = useState('')
   const [received, setReceived] = useState('')
   const [ws, setWs] = useState(null)
@@ -32,8 +33,8 @@ function App() {
     useEffect(() => {
     fetch('http://127.0.0.1:8000/')
       .then(res => res.json())
-      .then(data => setMessage(data.message))
-      .catch(() => setMessage('Error: backend not reachable'))
+      .then(() => setBackendOk(true))
+      .catch(() => setBackendOk(false))
   }, [])
 
       useEffect(() => {
@@ -248,9 +249,11 @@ const saveTeacherEdit = async (studentName) => {
   }
 
     return (
-    <div>
-      <h1>Dev-Arena</h1>
-      <p>{message}</p>
+    <div className="app-shell">
+      <h1 className="app-title">Dev-Arena</h1>
+      <p className="app-tagline">
+        {backendOk ? 'Teach live. Assess instantly.' : '⚠️ Backend not reachable'}
+      </p>
                 {joined && role === 'instructor' && (
         <div>
           <p style={{ textAlign: 'center', fontSize: '18px' }}>
@@ -372,62 +375,72 @@ const saveTeacherEdit = async (studentName) => {
         <div>
           {!role ? (
             <div>
-              <h3>I am a...</h3>
-              <button onClick={() => setRole('student')}>Student</button>
-              <button onClick={() => setRole('instructor')}>Instructor</button>
+              <p className="role-heading">I am a...</p>
+              <div className="role-buttons">
+                <button className="role-btn" onClick={() => setRole('student')}>Student</button>
+                <button className="role-btn" onClick={() => setRole('instructor')}>Instructor</button>
+              </div>
             </div>
           ) : role === 'student' ? (
-            <div>
+            <div className="auth-card">
               <h3>Join a Room</h3>
               <input
+                className="auth-input"
                 value={roomCode}
                 onChange={(e) => setRoomCode(e.target.value)}
                 placeholder="Room Code"
               />
               <input
+                className="auth-input"
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
                 placeholder="Your Name"
               />
-              <button onClick={joinRoom}>Join</button>
-              {joinError && <p style={{ color: 'red' }}>{joinError}</p>}
+              <button className="auth-btn" onClick={joinRoom}>Join</button>
+              {joinError && <p className="auth-error">{joinError}</p>}
             </div>
           ) : (
-            <div>
+            <div className="auth-card">
               <h3>Create a Room</h3>
               <input
+                className="auth-input"
                 value={instructorName}
                 onChange={(e) => setInstructorName(e.target.value)}
                 placeholder="Your Name"
               />
 
-              <div style={{ margin: '12px 0' }}>
+              <div className="mode-toggle">
                 <button
+                  className={`mode-btn ${roomMode === 'teaching' ? 'active-teaching' : ''}`}
                   onClick={() => setRoomMode('teaching')}
-                  style={{
-                    background: roomMode === 'teaching' ? '#3FB950' : '#21262D',
-                    color: 'white', padding: '8px 14px', borderRadius: '6px', marginRight: '8px'
-                  }}
                 >
                   Teaching Mode
                 </button>
                 <button
+                  className={`mode-btn ${roomMode === 'assessment' ? 'active-assessment' : ''}`}
                   onClick={() => setRoomMode('assessment')}
-                  style={{
-                    background: roomMode === 'assessment' ? '#D29922' : '#21262D',
-                    color: 'white', padding: '8px 14px', borderRadius: '6px'
-                  }}
                 >
                   Assessment Mode
                 </button>
               </div>
 
               {roomMode === 'assessment' && (
-                <div style={{ marginBottom: '12px' }}>
+                <div>
                   {questions.map((q, index) => (
-                    <div key={index} style={{ marginBottom: '10px', padding: '10px', border: '1px solid #30363D', borderRadius: '6px' }}>
-                      <p style={{ fontSize: '12px', color: '#8B949E', margin: '0 0 6px' }}>Question {index + 1}</p>
+                    <div key={index} className="question-block">
+                      <div className="question-block-header">
+                        <p className="question-label" style={{ margin: 0 }}>Question {index + 1}</p>
+                        {questions.length > 1 && (
+                          <button
+                            className="remove-question-btn"
+                            onClick={() => setQuestions(questions.filter((_, i) => i !== index))}
+                          >
+                            ✕ Remove
+                          </button>
+                        )}
+                      </div>
                       <textarea
+                        className="question-textarea"
                         value={q.question_text}
                         onChange={(e) => {
                           const updated = [...questions]
@@ -435,9 +448,10 @@ const saveTeacherEdit = async (studentName) => {
                           setQuestions(updated)
                         }}
                         placeholder="Question text"
-                        style={{ width: '100%', marginBottom: '6px' }}
                       />
                       <input
+                        className="auth-input"
+                        style={{ marginBottom: 0 }}
                         value={q.expected_output}
                         onChange={(e) => {
                           const updated = [...questions]
@@ -445,19 +459,20 @@ const saveTeacherEdit = async (studentName) => {
                           setQuestions(updated)
                         }}
                         placeholder="Expected output"
-                        style={{ width: '100%' }}
                       />
                     </div>
                   ))}
-                  <button onClick={() => setQuestions([...questions, { question_text: '', expected_output: '' }])}>
+                  <button className="add-question-btn" onClick={() => setQuestions([...questions, { question_text: '', expected_output: '' }])}>
                     + Add Question
                   </button>
                 </div>
               )}
 
-              <button onClick={createRoom}>Create Room</button>
+              <button className="auth-btn" onClick={createRoom}>Create Room</button>
               {createdRoomCode && (
-                <p>Room Created! Share this code: <strong>{createdRoomCode}</strong></p>
+                <p style={{ color: 'var(--accent-green)', fontSize: '13px', marginTop: '10px' }}>
+                  Room Created! Share this code: <strong>{createdRoomCode}</strong>
+                </p>
               )}
             </div>
           )}

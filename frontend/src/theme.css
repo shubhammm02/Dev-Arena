@@ -1,0 +1,263 @@
+/* Dev-Arena Design System */
+
+:root {
+  /* Backgrounds */
+  --bg-primary: #0D1117;
+  --bg-secondary: #161B22;
+  --border-color: #30363D;
+  --border-subtle: #21262D;
+
+  /* Text */
+  --text-primary: #E6EDF3;
+  --text-secondary: #8B949E;
+
+  /* Status & role colors */
+  --accent-green: #3FB950;
+  --accent-green-bg: #1a3a2e;
+  --accent-amber: #D29922;
+  --accent-amber-bg: #3D2E00;
+  --accent-red: #F85149;
+  --accent-red-bg: #3a1a1a;
+  --accent-blue: #1F6FEB;
+  --accent-gray: #484F58;
+
+  /* Fonts */
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-code: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+}
+
+pre, code {
+  font-family: var(--font-code);
+}
+
+/* Landing screen */
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 20px;
+}
+
+.app-title {
+  font-size: 42px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  letter-spacing: -1px;
+}
+
+@media (max-width: 480px) {
+  .app-title {
+    font-size: 28px;
+  }
+}
+
+.app-tagline {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 0 0 40px;
+}
+
+.role-heading {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin: 0 0 16px;
+}
+
+.role-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.role-btn {
+  padding: 12px 28px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.role-btn:hover {
+  border-color: var(--accent-green);
+  background: #1c2128;
+}
+
+/* Auth cards (join room / create room) */
+.auth-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 28px;
+  width: 100%;
+  max-width: 420px;
+  box-sizing: border-box;
+}
+
+.auth-card h3 {
+  margin: 0 0 20px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: var(--accent-green);
+}
+
+.auth-btn {
+  width: 100%;
+  padding: 11px;
+  border-radius: 6px;
+  border: none;
+  background: var(--accent-green);
+  color: #0D1117;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.auth-btn:hover {
+  opacity: 0.9;
+}
+
+.auth-error {
+  color: var(--accent-red);
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+/* Room mode toggle */
+.mode-toggle {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mode-btn.active-teaching {
+  background: var(--accent-blue);
+  color: white;
+  border-color: var(--accent-blue);
+}
+
+.mode-btn.active-assessment {
+  background: var(--accent-amber);
+  color: #0D1117;
+  border-color: var(--accent-amber);
+}
+
+/* Question input blocks */
+.question-block {
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+}
+
+.question-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.question-textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.question-textarea:focus, .auth-input:focus {
+  outline: none;
+  border-color: var(--accent-green);
+}
+
+.add-question-btn {
+  width: 100%;
+  padding: 9px;
+  border-radius: 6px;
+  border: 1px dashed var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+
+.add-question-btn:hover {
+  border-color: var(--accent-amber);
+  color: var(--accent-amber);
+}
+
+.question-block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.remove-question-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+.remove-question-btn:hover {
+  color: var(--accent-red);
+}

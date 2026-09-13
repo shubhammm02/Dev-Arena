@@ -29,6 +29,7 @@ function App() {
   const [studentRoomMode, setStudentRoomMode] = useState('teaching')
   const [studentQuestion, setStudentQuestion] = useState(null)
   const [lastResultCorrect, setLastResultCorrect] = useState(null)
+  const [helpRequested, setHelpRequested] = useState(false)
 
     useEffect(() => {
     fetch('http://127.0.0.1:8000/')
@@ -113,6 +114,12 @@ function App() {
             ...prev,
             [parsed.student_name]: true
           }))
+        }
+
+        else if (parsed.type === 'hand_cleared') {
+          if (role === 'student' && parsed.student_name === studentName) {
+            setHelpRequested(false)
+          }
         }
         
         else if (parsed.type === 'live_code') {
@@ -282,6 +289,12 @@ const saveTeacherEdit = async (studentName) => {
                       key={name}
                       onClick={() => {
                         setSelectedStudent(name)
+                        if (raisedHands[name] && ws) {
+                          ws.send(JSON.stringify({
+                            type: 'hand_cleared',
+                            student_name: name
+                          }))
+                        }
                         setRaisedHands(prev => {
                           const updated = { ...prev }
                           delete updated[name]
@@ -481,48 +494,51 @@ const saveTeacherEdit = async (studentName) => {
         <>
 
         {role === 'student' && (
-        <>
-          <hr />
-          <h3>Code Editor (Monaco + Piston)</h3>
-
-          {studentRoomMode === 'assessment' && studentQuestion && (
-            <div style={{ background: '#161B22', border: '1px solid #D29922', borderRadius: '6px', padding: '14px', marginBottom: '15px' }}>
-              <p style={{ color: '#D29922', fontSize: '12px', fontWeight: 'bold', margin: '0 0 6px' }}>ASSESSMENT QUESTION</p>
-              <p style={{ color: '#E6EDF3', fontSize: '14px', margin: 0 }}>{studentQuestion.question_text}</p>
-            </div>
-          )}
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '15px' }}>
-            <button onClick={() => {
-              if (ws) {
-                ws.send(JSON.stringify({
-                  type: 'raise_hand',
-                  student_name: studentName
-                }))
-              }
-            }} style={{ background: '#1F6FEB', color: 'white', padding: '8px 14px', borderRadius: '6px' }}>
-              🖐️ Need Help?
+        <div className="editor-shell">
+          <div className="editor-header">
+            <h3 className="editor-title">Code Editor</h3>
+            <button
+              className="help-btn"
+              disabled={helpRequested}
+              onClick={() => {
+                if (ws) {
+                  ws.send(JSON.stringify({
+                    type: 'raise_hand',
+                    student_name: studentName
+                  }))
+                  setHelpRequested(true)
+                }
+              }}
+            >
+              {helpRequested ? '✋ Help requested' : '🖐️ Need Help?'}
             </button>
           </div>
 
+          {studentRoomMode === 'assessment' && studentQuestion && (
+            <div className="question-banner">
+              <p className="question-banner-label">ASSESSMENT QUESTION</p>
+              <p className="question-banner-text">{studentQuestion.question_text}</p>
+            </div>
+          )}
+
           {pendingTeacherEdit && (
-            <div style={{ background: '#3D2E00', border: '1px solid #D29922', borderRadius: '6px', padding: '10px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: '#D29922', fontSize: '13px' }}>Your instructor updated your code</span>
+            <div className="teacher-edit-notice">
+              <span className="teacher-edit-text">Your instructor updated your code</span>
               <div>
-                <button onClick={() => {
+                <button className="small-btn" style={{ marginRight: '6px' }} onClick={() => {
                   setCode(pendingTeacherEdit)
                   setPendingTeacherEdit(null)
-                }} style={{ marginRight: '5px' }}>
+                }}>
                   Apply
                 </button>
-                <button onClick={() => setPendingTeacherEdit(null)}>
+                <button className="small-btn" onClick={() => setPendingTeacherEdit(null)}>
                   Dismiss
                 </button>
               </div>
             </div>
           )}
 
-          <select value={language} onChange={(e) => setLanguage(e.target.value)} style={{ marginBottom: '10px' }}>
+          <select className="language-select" value={language} onChange={(e) => setLanguage(e.target.value)}>
           <option value="python">Python</option>
           <option value="c">C</option>
           <option value="c++">C++</option>
@@ -547,29 +563,18 @@ const saveTeacherEdit = async (studentName) => {
            }}
            theme="vs-dark"
          />
-          <button onClick={runCode} disabled={running} style={{ marginTop: '10px' }}>
+          <button className="run-btn" onClick={runCode} disabled={running}>
             {running ? 'Running...' : 'Run'}
           </button>
-          <pre style={{ background: '#1e1e1e', color: '#0f0', padding: '10px', marginTop: '10px' }}>
+          <pre className="output-box">
             {output}
           </pre>
           {studentRoomMode === 'assessment' && lastResultCorrect !== null && (
-            <p style={{
-              color: lastResultCorrect ? '#3FB950' : '#F85149',
-              fontWeight: 'bold', fontSize: '14px', marginTop: '8px'
-            }}>
+            <p className={lastResultCorrect ? 'result-correct' : 'result-incorrect'}>
               {lastResultCorrect ? '✅ Correct!' : '❌ Incorrect, try again'}
             </p>
           )}
-          {studentRoomMode === 'assessment' && submissions[studentName]?.is_correct !== undefined && submissions[studentName]?.is_correct !== null && (
-            <p style={{
-              color: submissions[studentName].is_correct ? '#3FB950' : '#F85149',
-              fontWeight: 'bold', fontSize: '14px', marginTop: '8px'
-            }}>
-              {submissions[studentName].is_correct ? '✅ Correct!' : '❌ Incorrect, try again'}
-            </p>
-          )}
-        </>
+        </div>
       )}
         </>
       )}

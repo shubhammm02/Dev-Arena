@@ -88,6 +88,13 @@ def join_room(room_code: str, student_name: str, db: Session = Depends(get_db)):
         "questions": questions_list
     }
 
+@app.get("/room-mode/{room_code}")
+def room_mode(room_code: str, db: Session = Depends(get_db)):
+    room = db.query(Room).filter(Room.room_code == room_code).first()
+    if not room:
+        return {"error": "Room not found"}
+    return {"mode": room.mode}
+
 @app.get("/room-status/{room_code}")
 def room_status(room_code: str, db: Session = Depends(get_db)):
     all_submissions = db.query(Submission).filter(Submission.room_code == room_code).order_by(Submission.submitted_at).all()

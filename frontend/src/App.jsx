@@ -49,6 +49,11 @@ function App() {
         .then(res => res.json())
         .then(data => setSubmissions(data))
         .catch(() => console.error('Could not restore room status'))
+
+      fetch(`http://127.0.0.1:8000/room-mode/${savedRoom}`)
+        .then(res => res.json())
+        .then(data => setRoomMode(data.mode || 'teaching'))
+        .catch(() => console.error('Could not restore room mode'))
     }
   }, [])
 
@@ -293,6 +298,16 @@ const saveTeacherEdit = async (studentName) => {
                           display: 'inline-block'
                         }}></span>
                         <span style={{ color: '#E6EDF3', fontSize: '13px' }}>{name}</span>
+                        {roomMode === 'assessment' && sub.is_correct === true && (
+                          <span style={{ background: '#1a3a2e', color: '#3FB950', fontSize: '10px', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
+                            Correct
+                          </span>
+                        )}
+                        {roomMode === 'assessment' && sub.is_correct === false && (
+                          <span style={{ background: '#3a1a1a', color: '#F85149', fontSize: '10px', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
+                            Incorrect
+                          </span>
+                        )}
                         {raisedHands[name] && <span>🖐️</span>}
                       </div>
                       <span style={{ color: '#8B949E' }}>›</span>

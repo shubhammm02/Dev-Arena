@@ -78,14 +78,14 @@ function App() {
       try {
         const parsed = JSON.parse(event.data)
 
-                        if (parsed.type === 'submission') {
+          if (parsed.type === 'submission') {
           setSubmissions(prev => ({
             ...prev,
-            [parsed.student_name]: { code: parsed.code, output: parsed.output, status: parsed.status }
+            [parsed.student_name]: { code: parsed.code, output: parsed.output, status: parsed.status, is_correct: parsed.is_correct }
           }))
         }
 
-                else if (parsed.type === 'join') {
+          else if (parsed.type === 'join') {
           setSubmissions(prev => {
             if (prev[parsed.student_name]) return prev
             return {
@@ -261,32 +261,34 @@ const saveTeacherEdit = async (studentName) => {
       <p className="app-tagline">
         {backendOk ? 'Teach live. Assess instantly.' : '⚠️ Backend not reachable'}
       </p>
-                {joined && role === 'instructor' && (
-        <div>
-          <p style={{ textAlign: 'center', fontSize: '18px' }}>
+
+      {joined && role === 'instructor' && (
+        <div className="dashboard-shell">
+          <p className="dashboard-room-code">
             Room Code: <strong>{createdRoomCode}</strong>
           </p>
 
-                    <div style={{ background: '#0D1117', border: '1px solid #30363D', borderRadius: '10px', padding: '20px', maxWidth: '500px', margin: '0 auto', fontFamily: 'sans-serif' }}>
+          <div className="dashboard-card">
 
             {!selectedStudent ? (
               <>
-               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '11px', color: '#8B949E' }}>
-                  <span><span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3FB950', display: 'inline-block', marginRight: '4px' }}></span>{Object.values(submissions).filter(s => s.status !== 'error' && s.status !== 'none').length} Success</span>
-                  <span><span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#F85149', display: 'inline-block', marginRight: '4px' }}></span>{Object.values(submissions).filter(s => s.status === 'error').length} Error</span>
-                  <span><span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#484F58', display: 'inline-block', marginRight: '4px' }}></span>{Object.values(submissions).filter(s => s.status === 'none').length} Not run yet</span>
+               <div className="status-legend">
+                  <span><span className="status-dot" style={{ background: 'var(--accent-green)' }}></span>{Object.values(submissions).filter(s => s.status !== 'error' && s.status !== 'none').length} Success</span>
+                  <span><span className="status-dot" style={{ background: 'var(--accent-red)' }}></span>{Object.values(submissions).filter(s => s.status === 'error').length} Error</span>
+                  <span><span className="status-dot" style={{ background: 'var(--accent-gray)' }}></span>{Object.values(submissions).filter(s => s.status === 'none').length} Not run yet</span>
                 </div>
 
-                <p style={{ color: '#E6EDF3', fontSize: '15px', fontWeight: 'bold', margin: '0 0 14px' }}>
+                <p className="connected-count">
                   {Object.keys(submissions).length} student{Object.keys(submissions).length !== 1 ? 's' : ''} connected
                 </p>
 
                 {Object.keys(submissions).length === 0 ? (
-                  <p style={{ color: '#8B949E' }}>No submissions yet.</p>
+                  <p className="empty-state">No submissions yet.</p>
                 ) : (
                   Object.entries(submissions).map(([name, sub]) => (
                     <div
                       key={name}
+                      className="student-row"
                       onClick={() => {
                         setSelectedStudent(name)
                         if (raisedHands[name] && ws) {
@@ -301,56 +303,44 @@ const saveTeacherEdit = async (studentName) => {
                           return updated
                         })
                       }}
-
-                      style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: '10px 8px', borderBottom: '0.5px solid #21262D', cursor: 'pointer'
-                      }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{
-                          width: '7px', height: '7px', borderRadius: '50%',
-                          background: sub.status === 'error' ? '#F85149' : sub.status === 'none' ? '#484F58' : '#3FB950',
-                          display: 'inline-block'
-                        }}></span>
-                        <span style={{ color: '#E6EDF3', fontSize: '13px' }}>{name}</span>
+                      <div className="student-row-left">
+                          <span
+                          className="student-row-dot"
+                          style={{ background: sub.status === 'error' ? 'var(--accent-red)' : sub.status === 'none' ? 'var(--accent-gray)' : 'var(--accent-green)' }}
+                        ></span>
+                        <span className="student-name">{name}</span>
                         {roomMode === 'assessment' && sub.is_correct === true && (
-                          <span style={{ background: '#1a3a2e', color: '#3FB950', fontSize: '10px', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
-                            Correct
-                          </span>
+                          <span className="correctness-badge correct">Correct</span>
                         )}
                         {roomMode === 'assessment' && sub.is_correct === false && (
-                          <span style={{ background: '#3a1a1a', color: '#F85149', fontSize: '10px', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
-                            Incorrect
-                          </span>
+                          <span className="correctness-badge incorrect">Incorrect</span>
                         )}
                         {raisedHands[name] && <span>🖐️</span>}
                       </div>
-                      <span style={{ color: '#8B949E' }}>›</span>
+                      <span className="chevron">›</span>
                     </div>
                   ))
                 )}
               </>
             ) : (
               <div>
-                <div
+                <span
+                  className="back-link"
                   onClick={() => { setSelectedStudent(null); setEditingStudent(null) }}
-                  style={{ color: '#8B949E', fontSize: '12px', cursor: 'pointer', marginBottom: '14px' }}
                 >
                   ‹ Back to all students
-                </div>
+                </span>
 
-                <p style={{ color: '#E6EDF3', fontSize: '14px', fontWeight: 'bold', marginBottom: '10px' }}>
-                  {selectedStudent}
-                </p>
+                <p className="detail-name">{selectedStudent}</p>
 
-                <pre style={{ background: '#161B22', color: '#0f0', padding: '10px', borderRadius: '6px', overflowX: 'auto', fontSize: '13px' }}>
+                <pre className="code-preview">
                   {submissions[selectedStudent].code}
                 </pre>
-                <p style={{ color: '#8B949E', fontSize: '13px' }}>Output: {submissions[selectedStudent].output}</p>
+                <p className="output-label">Output: {submissions[selectedStudent].output}</p>
 
                 {editingStudent !== selectedStudent ? (
-                  <button onClick={() => {
+                  <button className="small-btn" onClick={() => {
                     setEditingStudent(selectedStudent)
                     setEditedCode(submissions[selectedStudent].code)
                   }}>
@@ -370,10 +360,10 @@ const saveTeacherEdit = async (studentName) => {
                         })
                       }}
                     />
-                    <button onClick={() => saveTeacherEdit(selectedStudent)} style={{ marginTop: '5px' }}>
+                    <button className="small-btn" style={{ marginTop: '8px', marginRight: '6px' }} onClick={() => saveTeacherEdit(selectedStudent)}>
                       Save Edit
                     </button>
-                    <button onClick={() => setEditingStudent(null)} style={{ marginTop: '5px', marginLeft: '5px' }}>
+                    <button className="small-btn" style={{ marginTop: '8px' }} onClick={() => setEditingStudent(null)}>
                       Cancel
                     </button>
                   </div>

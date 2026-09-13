@@ -415,3 +415,147 @@ pre, code {
   font-size: 14px;
   margin-top: 10px;
 }
+
+/* Instructor dashboard */
+.dashboard-shell {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.dashboard-room-code {
+  text-align: center;
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+.dashboard-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.status-legend {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 4px;
+}
+
+.connected-count {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 14px;
+}
+
+.empty-state {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.student-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.student-row:hover {
+  background: var(--bg-primary);
+}
+
+.student-row-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.student-row-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.student-name {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.correctness-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.correctness-badge.correct {
+  background: var(--accent-green-bg);
+  color: var(--accent-green);
+}
+
+.correctness-badge.incorrect {
+  background: var(--accent-red-bg);
+  color: var(--accent-red);
+}
+
+.chevron {
+  color: var(--text-secondary);
+}
+
+.back-link {
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  margin-bottom: 14px;
+  display: inline-block;
+}
+
+.back-link:hover {
+  color: var(--accent-green);
+}
+
+.detail-name {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.code-preview {
+  background: var(--bg-primary);
+  color: var(--accent-green);
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 13px;
+  font-family: var(--font-code);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.output-label {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin: 10px 0;
+}

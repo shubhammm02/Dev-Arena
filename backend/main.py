@@ -8,7 +8,7 @@ import string
 from fastapi import Depends
 from sqlalchemy.orm import Session
 from database import SessionLocal
-from models import Room, Student, Submission, TeacherEdit
+from models import Room, Student, Submission, TeacherEdit, Question
 
 def get_db():
     db = SessionLocal()
@@ -33,13 +33,29 @@ app.add_middleware(
 )
 
 @app.post("/create-room")
-def create_room(instructor_name: str, db: Session = Depends(get_db)):
+def create_room(payload: dict, db: Session = Depends(get_db)):
+    instructor_name = payload.get("instructor_name", "Unknown")
+    mode = payload.get("mode", "teaching")
+    questions = payload.get("questions", [])
+
     room_code = generate_room_code()
-    new_room = Room(room_code=room_code, instructor_name=instructor_name)
+    new_room = Room(room_code=room_code, instructor_name=instructor_name, mode=mode)
     db.add(new_room)
     db.commit()
     db.refresh(new_room)
-    return {"room_code": new_room.room_code, "instructor_name": new_room.instructor_name}
+
+    if mode == "assessment":
+        for index, q in enumerate(questions):
+            new_question = Question(
+                room_id=new_room.id,
+                question_text=q.get("question_text", ""),
+                expected_output=q.get("expected_output", ""),
+                order_index=index
+            )
+            db.add(new_question)
+        db.commit()
+
+    return {"room_code": new_room.room_code, "instructor_name": new_room.instructor_name, "mode": new_room.mode}
 
 @app.get("/")
 def read_root():
@@ -56,7 +72,21 @@ def join_room(room_code: str, student_name: str, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_student)
 
-    return {"room_code": room.room_code, "instructor_name": room.instructor_name, "student_id": new_student.id}
+    questions_list = []
+    if room.mode == "assessment":
+        questions = db.query(Question).filter(Question.room_id == room.id).order_by(Question.order_index).all()
+        questions_list = [
+            {"id": q.id, "question_text": q.question_text, "order_index": q.order_index}
+            for q in questions
+        ]
+
+    return {
+        "room_code": room.room_code,
+        "instructor_name": room.instructor_name,
+        "student_id": new_student.id,
+        "mode": room.mode,
+        "questions": questions_list
+    }
 
 @app.get("/room-status/{room_code}")
 def room_status(room_code: str, db: Session = Depends(get_db)):
@@ -67,7 +97,9 @@ def room_status(room_code: str, db: Session = Depends(get_db)):
         latest_per_student[sub.student_name] = {
             "code": sub.code,
             "output": sub.output,
-            "status": sub.status
+            "status": sub.status,
+            "is_correct": sub.is_correct,
+            "question_id": sub.question_id
         }
 
     currently_connected = connected_students.get(room_code, set())
@@ -89,6 +121,7 @@ def run_code(payload: dict, db: Session = Depends(get_db)):
     language = payload.get("language", "python")
     student_name = payload.get("student_name", "Unknown")
     room_code = payload.get("room_code", "Unknown")
+    question_id = payload.get("question_id")
 
     response = requests.post(
     "http://127.0.0.1:2000/api/v2/execute",
@@ -106,19 +139,28 @@ def run_code(payload: dict, db: Session = Depends(get_db)):
     output_text = stdout or stderr
     status = "error" if stderr else "ok"
 
+    is_correct = None
+    if question_id:
+        question = db.query(Question).filter(Question.id == question_id).first()
+        if question:
+            is_correct = stdout.strip() == question.expected_output.strip()
+
     new_submission = Submission(
         student_name=student_name,
         room_code=room_code,
         code=code,
         output=output_text,
-        status=status
+        status=status,
+        question_id=question_id,
+        is_correct=is_correct
     )
     db.add(new_submission)
     db.commit()
 
     return {
         "output": result.get("run", {}).get("output", ""),
-        "stderr": result.get("run", {}).get("stderr", "")
+        "stderr": result.get("run", {}).get("stderr", ""),
+        "is_correct": is_correct
     }
 
 # --- WebSocket setup (already working) ---

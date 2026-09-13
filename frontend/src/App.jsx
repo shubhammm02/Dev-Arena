@@ -17,12 +17,17 @@ function App() {
   const [role, setRole] = useState(null) 
   const [createdRoomCode, setCreatedRoomCode] = useState('')
   const [instructorName, setInstructorName] = useState('')
+  const [roomMode, setRoomMode] = useState('teaching')
+  const [questions, setQuestions] = useState([{ question_text: '', expected_output: '' }])
   const [submissions, setSubmissions] = useState({})
   const [editingStudent, setEditingStudent] = useState(null)
   const [editedCode, setEditedCode] = useState('') 
   const [selectedStudent, setSelectedStudent] = useState(null)
   const [pendingTeacherEdit, setPendingTeacherEdit] = useState(null)
   const [raisedHands, setRaisedHands] = useState({})
+  const [studentRoomMode, setStudentRoomMode] = useState('teaching')
+  const [studentQuestion, setStudentQuestion] = useState(null)
+  const [lastResultCorrect, setLastResultCorrect] = useState(null)
 
     useEffect(() => {
     fetch('http://127.0.0.1:8000/')
@@ -141,6 +146,10 @@ function App() {
       if (data.error) {
         setJoinError(data.error)
       } else {
+        setStudentRoomMode(data.mode || 'teaching')
+        if (data.questions && data.questions.length > 0) {
+          setStudentQuestion(data.questions[0])
+        }
         setJoined(true)
       }
     } catch (err) {
@@ -150,8 +159,14 @@ function App() {
 
 const createRoom = async () => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/create-room?instructor_name=${instructorName}`, {
-        method: 'POST'
+      const res = await fetch(`http://127.0.0.1:8000/create-room`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          instructor_name: instructorName,
+          mode: roomMode,
+          questions: roomMode === 'assessment' ? questions : []
+        })
       })
       const data = await res.json()
       setCreatedRoomCode(data.room_code)
@@ -201,12 +216,14 @@ const saveTeacherEdit = async (studentName) => {
             code,
             language,
             student_name: role === 'student' ? studentName : instructorName,
-            room_code: role === 'student' ? roomCode : createdRoomCode
+            room_code: role === 'student' ? roomCode : createdRoomCode,
+            question_id: studentRoomMode === 'assessment' && studentQuestion ? studentQuestion.id : null
         })
       })
 
       const data = await res.json()
       setOutput(data.output || data.stderr || 'No output')
+      setLastResultCorrect(data.is_correct)
 
         if (ws && role === 'student') {
         ws.send(JSON.stringify({
@@ -214,7 +231,8 @@ const saveTeacherEdit = async (studentName) => {
           student_name: studentName,
           code: code,
           output: data.output || data.stderr || 'No output',
-          status: data.stderr ? 'error' : 'ok'
+          status: data.stderr ? 'error' : 'ok',
+          is_correct: data.is_correct
         }))
       }
 
@@ -367,6 +385,61 @@ const saveTeacherEdit = async (studentName) => {
                 onChange={(e) => setInstructorName(e.target.value)}
                 placeholder="Your Name"
               />
+
+              <div style={{ margin: '12px 0' }}>
+                <button
+                  onClick={() => setRoomMode('teaching')}
+                  style={{
+                    background: roomMode === 'teaching' ? '#3FB950' : '#21262D',
+                    color: 'white', padding: '8px 14px', borderRadius: '6px', marginRight: '8px'
+                  }}
+                >
+                  Teaching Mode
+                </button>
+                <button
+                  onClick={() => setRoomMode('assessment')}
+                  style={{
+                    background: roomMode === 'assessment' ? '#D29922' : '#21262D',
+                    color: 'white', padding: '8px 14px', borderRadius: '6px'
+                  }}
+                >
+                  Assessment Mode
+                </button>
+              </div>
+
+              {roomMode === 'assessment' && (
+                <div style={{ marginBottom: '12px' }}>
+                  {questions.map((q, index) => (
+                    <div key={index} style={{ marginBottom: '10px', padding: '10px', border: '1px solid #30363D', borderRadius: '6px' }}>
+                      <p style={{ fontSize: '12px', color: '#8B949E', margin: '0 0 6px' }}>Question {index + 1}</p>
+                      <textarea
+                        value={q.question_text}
+                        onChange={(e) => {
+                          const updated = [...questions]
+                          updated[index].question_text = e.target.value
+                          setQuestions(updated)
+                        }}
+                        placeholder="Question text"
+                        style={{ width: '100%', marginBottom: '6px' }}
+                      />
+                      <input
+                        value={q.expected_output}
+                        onChange={(e) => {
+                          const updated = [...questions]
+                          updated[index].expected_output = e.target.value
+                          setQuestions(updated)
+                        }}
+                        placeholder="Expected output"
+                        style={{ width: '100%' }}
+                      />
+                    </div>
+                  ))}
+                  <button onClick={() => setQuestions([...questions, { question_text: '', expected_output: '' }])}>
+                    + Add Question
+                  </button>
+                </div>
+              )}
+
               <button onClick={createRoom}>Create Room</button>
               {createdRoomCode && (
                 <p>Room Created! Share this code: <strong>{createdRoomCode}</strong></p>
@@ -382,16 +455,25 @@ const saveTeacherEdit = async (studentName) => {
           <hr />
           <h3>Code Editor (Monaco + Piston)</h3>
 
-          <button onClick={() => {
-            if (ws) {
-              ws.send(JSON.stringify({
-                type: 'raise_hand',
-                student_name: studentName
-              }))
-            }
-          }} style={{ marginBottom: '10px', background: '#1F6FEB', color: 'white' }}>
-            🖐️ Need Help?
-          </button>
+          {studentRoomMode === 'assessment' && studentQuestion && (
+            <div style={{ background: '#161B22', border: '1px solid #D29922', borderRadius: '6px', padding: '14px', marginBottom: '15px' }}>
+              <p style={{ color: '#D29922', fontSize: '12px', fontWeight: 'bold', margin: '0 0 6px' }}>ASSESSMENT QUESTION</p>
+              <p style={{ color: '#E6EDF3', fontSize: '14px', margin: 0 }}>{studentQuestion.question_text}</p>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '15px' }}>
+            <button onClick={() => {
+              if (ws) {
+                ws.send(JSON.stringify({
+                  type: 'raise_hand',
+                  student_name: studentName
+                }))
+              }
+            }} style={{ background: '#1F6FEB', color: 'white', padding: '8px 14px', borderRadius: '6px' }}>
+              🖐️ Need Help?
+            </button>
+          </div>
 
           {pendingTeacherEdit && (
             <div style={{ background: '#3D2E00', border: '1px solid #D29922', borderRadius: '6px', padding: '10px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -441,6 +523,22 @@ const saveTeacherEdit = async (studentName) => {
           <pre style={{ background: '#1e1e1e', color: '#0f0', padding: '10px', marginTop: '10px' }}>
             {output}
           </pre>
+          {studentRoomMode === 'assessment' && lastResultCorrect !== null && (
+            <p style={{
+              color: lastResultCorrect ? '#3FB950' : '#F85149',
+              fontWeight: 'bold', fontSize: '14px', marginTop: '8px'
+            }}>
+              {lastResultCorrect ? '✅ Correct!' : '❌ Incorrect, try again'}
+            </p>
+          )}
+          {studentRoomMode === 'assessment' && submissions[studentName]?.is_correct !== undefined && submissions[studentName]?.is_correct !== null && (
+            <p style={{
+              color: submissions[studentName].is_correct ? '#3FB950' : '#F85149',
+              fontWeight: 'bold', fontSize: '14px', marginTop: '8px'
+            }}>
+              {submissions[studentName].is_correct ? '✅ Correct!' : '❌ Incorrect, try again'}
+            </p>
+          )}
         </>
       )}
         </>

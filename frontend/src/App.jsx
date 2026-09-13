@@ -27,9 +27,16 @@ function App() {
   const [pendingTeacherEdit, setPendingTeacherEdit] = useState(null)
   const [raisedHands, setRaisedHands] = useState({})
   const [studentRoomMode, setStudentRoomMode] = useState('teaching')
-  const [studentQuestion, setStudentQuestion] = useState(null)
-  const [lastResultCorrect, setLastResultCorrect] = useState(null)
+  const [studentQuestions, setStudentQuestions] = useState([])
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  const [questionCode, setQuestionCode] = useState({})
+  const [questionResults, setQuestionResults] = useState({})
   const [helpRequested, setHelpRequested] = useState(false)
+
+  const currentQuestion = studentQuestions[currentQuestionIndex] || null
+  const activeCode = (studentRoomMode === 'assessment' && currentQuestion)
+    ? (questionCode[currentQuestion.id] ?? '')
+    : code
 
     useEffect(() => {
     fetch('http://127.0.0.1:8000/')
@@ -161,7 +168,12 @@ function App() {
       } else {
         setStudentRoomMode(data.mode || 'teaching')
         if (data.questions && data.questions.length > 0) {
-          setStudentQuestion(data.questions[0])
+          setStudentQuestions(data.questions)
+          const initialCode = {}
+          data.questions.forEach(q => {
+            initialCode[q.id] = 'print("Hello, Dev-Arena!")'
+          })
+          setQuestionCode(initialCode)
         }
         setJoined(true)
       }
@@ -221,28 +233,32 @@ const saveTeacherEdit = async (studentName) => {
   const runCode = async () => {
     setRunning(true)
     setOutput('Running...')
+    const codeToRun = (studentRoomMode === 'assessment' && currentQuestion) ? activeCode : code
     try {
             const res = await fetch('http://127.0.0.1:8000/run', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-            code,
+            code: codeToRun,
             language,
             student_name: role === 'student' ? studentName : instructorName,
             room_code: role === 'student' ? roomCode : createdRoomCode,
-            question_id: studentRoomMode === 'assessment' && studentQuestion ? studentQuestion.id : null
+            question_id: (studentRoomMode === 'assessment' && currentQuestion) ? currentQuestion.id : null
         })
       })
 
       const data = await res.json()
       setOutput(data.output || data.stderr || 'No output')
-      setLastResultCorrect(data.is_correct)
+
+      if (studentRoomMode === 'assessment' && currentQuestion) {
+        setQuestionResults(prev => ({ ...prev, [currentQuestion.id]: data.is_correct }))
+      }
 
         if (ws && role === 'student') {
         ws.send(JSON.stringify({
           type: 'submission',
           student_name: studentName,
-          code: code,
+          code: codeToRun,
           output: data.output || data.stderr || 'No output',
           status: data.stderr ? 'error' : 'ok',
           is_correct: data.is_correct
@@ -504,10 +520,33 @@ const saveTeacherEdit = async (studentName) => {
             </button>
           </div>
 
-          {studentRoomMode === 'assessment' && studentQuestion && (
+          {studentRoomMode === 'assessment' && currentQuestion && (
             <div className="question-banner">
-              <p className="question-banner-label">ASSESSMENT QUESTION</p>
-              <p className="question-banner-text">{studentQuestion.question_text}</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <p className="question-banner-label" style={{ margin: 0 }}>ASSESSMENT QUESTION</p>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
+                  Question {currentQuestionIndex + 1} of {studentQuestions.length}
+                </span>
+              </div>
+              <p className="question-banner-text">{currentQuestion.question_text}</p>
+              {studentQuestions.length > 1 && (
+                <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                  <button
+                    className="small-btn"
+                    disabled={currentQuestionIndex === 0}
+                    onClick={() => setCurrentQuestionIndex(i => i - 1)}
+                  >
+                    ← Previous
+                  </button>
+                  <button
+                    className="small-btn"
+                    disabled={currentQuestionIndex === studentQuestions.length - 1}
+                    onClick={() => setCurrentQuestionIndex(i => i + 1)}
+                  >
+                    Next →
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -537,9 +576,13 @@ const saveTeacherEdit = async (studentName) => {
           <Editor
            height="300px"
            language={language}
-           value={code}
+           value={activeCode}
            onChange={(value) => {
-             setCode(value)
+             if (studentRoomMode === 'assessment' && currentQuestion) {
+               setQuestionCode(prev => ({ ...prev, [currentQuestion.id]: value }))
+             } else {
+               setCode(value)
+             }
              if (ws) {
                clearTimeout(window.liveTypingTimeout)
                window.liveTypingTimeout = setTimeout(() => {
@@ -559,9 +602,9 @@ const saveTeacherEdit = async (studentName) => {
           <pre className="output-box">
             {output}
           </pre>
-          {studentRoomMode === 'assessment' && lastResultCorrect !== null && (
-            <p className={lastResultCorrect ? 'result-correct' : 'result-incorrect'}>
-              {lastResultCorrect ? '✅ Correct!' : '❌ Incorrect, try again'}
+          {studentRoomMode === 'assessment' && currentQuestion && questionResults[currentQuestion.id] !== undefined && (
+            <p className={questionResults[currentQuestion.id] ? 'result-correct' : 'result-incorrect'}>
+              {questionResults[currentQuestion.id] ? '✅ Correct!' : '❌ Incorrect, try again'}
             </p>
           )}
         </div>

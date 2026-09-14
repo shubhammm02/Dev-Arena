@@ -93,13 +93,18 @@ def room_mode(room_code: str, db: Session = Depends(get_db)):
     room = db.query(Room).filter(Room.room_code == room_code).first()
     if not room:
         return {"error": "Room not found"}
-    return {"mode": room.mode}
+    question_count = 0
+    if room.mode == "assessment":
+        question_count = db.query(Question).filter(Question.room_id == room.id).count()
+    return {"mode": room.mode, "question_count": question_count}
 
 @app.get("/room-status/{room_code}")
 def room_status(room_code: str, db: Session = Depends(get_db)):
     all_submissions = db.query(Submission).filter(Submission.room_code == room_code).order_by(Submission.submitted_at).all()
 
     latest_per_student = {}
+    question_results_per_student = {}
+
     for sub in all_submissions:
         latest_per_student[sub.student_name] = {
             "code": sub.code,
@@ -108,6 +113,14 @@ def room_status(room_code: str, db: Session = Depends(get_db)):
             "is_correct": sub.is_correct,
             "question_id": sub.question_id
         }
+
+        if sub.question_id is not None:
+            if sub.student_name not in question_results_per_student:
+                question_results_per_student[sub.student_name] = {}
+            question_results_per_student[sub.student_name][sub.question_id] = sub.is_correct
+
+    for name in latest_per_student:
+        latest_per_student[name]["question_results"] = question_results_per_student.get(name, {})
 
     currently_connected = connected_students.get(room_code, set())
 

@@ -19,6 +19,7 @@ function App() {
   const [createdRoomCode, setCreatedRoomCode] = useState('')
   const [instructorName, setInstructorName] = useState('')
   const [roomMode, setRoomMode] = useState('teaching')
+  const [totalQuestions, setTotalQuestions] = useState(0)
   const [questions, setQuestions] = useState([{ question_text: '', expected_output: '' }])
   const [submissions, setSubmissions] = useState({})
   const [editingStudent, setEditingStudent] = useState(null)
@@ -61,7 +62,10 @@ function App() {
 
       fetch(`http://127.0.0.1:8000/room-mode/${savedRoom}`)
         .then(res => res.json())
-        .then(data => setRoomMode(data.mode || 'teaching'))
+        .then(data => {
+          setRoomMode(data.mode || 'teaching')
+          setTotalQuestions(data.question_count || 0)
+        })
         .catch(() => console.error('Could not restore room mode'))
     }
   }, [])
@@ -86,10 +90,24 @@ function App() {
         const parsed = JSON.parse(event.data)
 
           if (parsed.type === 'submission') {
-          setSubmissions(prev => ({
-            ...prev,
-            [parsed.student_name]: { code: parsed.code, output: parsed.output, status: parsed.status, is_correct: parsed.is_correct }
-          }))
+          setSubmissions(prev => {
+            const existing = prev[parsed.student_name] || {}
+            const existingResults = existing.question_results || {}
+            const updatedResults = parsed.question_id
+              ? { ...existingResults, [parsed.question_id]: parsed.is_correct }
+              : existingResults
+
+            return {
+              ...prev,
+              [parsed.student_name]: {
+                code: parsed.code,
+                output: parsed.output,
+                status: parsed.status,
+                is_correct: parsed.is_correct,
+                question_results: updatedResults
+              }
+            }
+          })
         }
 
           else if (parsed.type === 'join') {
@@ -195,6 +213,7 @@ const createRoom = async () => {
       })
       const data = await res.json()
       setCreatedRoomCode(data.room_code)
+      setTotalQuestions(roomMode === 'assessment' ? questions.length : 0)
       setJoined(true)
       sessionStorage.setItem('devarena_role', 'instructor')
       sessionStorage.setItem('devarena_room', data.room_code)
@@ -261,7 +280,8 @@ const saveTeacherEdit = async (studentName) => {
           code: codeToRun,
           output: data.output || data.stderr || 'No output',
           status: data.stderr ? 'error' : 'ok',
-          is_correct: data.is_correct
+          is_correct: data.is_correct,
+          question_id: (studentRoomMode === 'assessment' && currentQuestion) ? currentQuestion.id : null
         }))
       }
 
@@ -289,9 +309,25 @@ const saveTeacherEdit = async (studentName) => {
             {!selectedStudent ? (
               <>
                <div className="status-legend">
-                  <span><span className="status-dot" style={{ background: 'var(--accent-green)' }}></span>{Object.values(submissions).filter(s => s.status !== 'error' && s.status !== 'none').length} Success</span>
-                  <span><span className="status-dot" style={{ background: 'var(--accent-red)' }}></span>{Object.values(submissions).filter(s => s.status === 'error').length} Error</span>
-                  <span><span className="status-dot" style={{ background: 'var(--accent-gray)' }}></span>{Object.values(submissions).filter(s => s.status === 'none').length} Not run yet</span>
+                  {roomMode === 'assessment' && totalQuestions > 0 ? (
+                    <>
+                      <span><span className="status-dot" style={{ background: 'var(--accent-green)' }}></span>{Object.values(submissions).filter(s => {
+                        const results = s.question_results || {}
+                        return Object.values(results).filter(v => v === true).length === totalQuestions && Object.keys(results).length > 0
+                      }).length} All Correct</span>
+                      <span><span className="status-dot" style={{ background: 'var(--accent-red)' }}></span>{Object.values(submissions).filter(s => {
+                        const results = s.question_results || {}
+                        return Object.keys(results).length > 0 && Object.values(results).filter(v => v === true).length < totalQuestions
+                      }).length} Needs Work</span>
+                      <span><span className="status-dot" style={{ background: 'var(--accent-gray)' }}></span>{Object.values(submissions).filter(s => Object.keys(s.question_results || {}).length === 0).length} Not run yet</span>
+                    </>
+                  ) : (
+                    <>
+                      <span><span className="status-dot" style={{ background: 'var(--accent-green)' }}></span>{Object.values(submissions).filter(s => s.status !== 'error' && s.status !== 'none').length} Success</span>
+                      <span><span className="status-dot" style={{ background: 'var(--accent-red)' }}></span>{Object.values(submissions).filter(s => s.status === 'error').length} Error</span>
+                      <span><span className="status-dot" style={{ background: 'var(--accent-gray)' }}></span>{Object.values(submissions).filter(s => s.status === 'none').length} Not run yet</span>
+                    </>
+                  )}
                 </div>
 
                 <p className="connected-count">
@@ -326,12 +362,20 @@ const saveTeacherEdit = async (studentName) => {
                           style={{ background: sub.status === 'error' ? 'var(--accent-red)' : sub.status === 'none' ? 'var(--accent-gray)' : 'var(--accent-green)' }}
                         ></span>
                         <span className="student-name">{name}</span>
-                        {roomMode === 'assessment' && sub.is_correct === true && (
-                          <span className="correctness-badge correct">Correct</span>
-                        )}
-                        {roomMode === 'assessment' && sub.is_correct === false && (
-                          <span className="correctness-badge incorrect">Incorrect</span>
-                        )}
+                        {roomMode === 'assessment' && totalQuestions > 0 && (() => {
+                          const results = sub.question_results || {}
+                          const correctCount = Object.values(results).filter(v => v === true).length
+                          const attemptedCount = Object.keys(results).length
+                          if (attemptedCount === 0) return null
+                          let tier = 'incorrect'
+                          if (correctCount === totalQuestions) tier = 'correct'
+                          else if (correctCount > 0) tier = 'partial'
+                          return (
+                            <span className={`correctness-badge ${tier}`}>
+                              {correctCount}/{totalQuestions} Correct
+                            </span>
+                          )
+                        })()}
                         {raisedHands[name] && <span>🖐️</span>}
                       </div>
                       <span className="chevron">›</span>

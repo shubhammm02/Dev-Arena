@@ -520,6 +520,11 @@ pre, code {
   color: var(--accent-red);
 }
 
+.correctness-badge.partial {
+  background: var(--accent-amber-bg);
+  color: var(--accent-amber);
+}
+
 .chevron {
   color: var(--text-secondary);
 }

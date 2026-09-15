@@ -302,7 +302,14 @@ const saveTeacherEdit = async (studentName) => {
 
     return (
     <div className="app-shell">
-      <h1 className="app-title">Dev-Arena</h1>
+      <div className="app-title-row">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="36" height="36" rx="8" fill="var(--accent-green-bg)" stroke="var(--accent-green)" strokeWidth="1.5"/>
+          <path d="M10 13L15 18L10 23" stroke="var(--accent-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M18 23H26" stroke="var(--accent-green)" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+        <h1 className="app-title">Dev-Arena</h1>
+      </div>
       <p className="app-tagline">
         {backendOk ? 'Teach live. Assess instantly.' : '⚠️ Backend not reachable'}
       </p>
@@ -449,8 +456,22 @@ const saveTeacherEdit = async (studentName) => {
             <div>
               <p className="role-heading">I am a...</p>
               <div className="role-buttons">
-                <button className="role-btn" onClick={() => setRole('student')}>Student</button>
-                <button className="role-btn" onClick={() => setRole('instructor')}>Instructor</button>
+                <div className="role-card student" onClick={() => setRole('student')}>
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" strokeWidth="1.8">
+                    <circle cx="12" cy="8" r="4"/>
+                    <path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>
+                  </svg>
+                  <span className="role-card-title">Student</span>
+                  <span className="role-card-desc">Join with a room code</span>
+                </div>
+                <div className="role-card instructor" onClick={() => setRole('instructor')}>
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-amber)" strokeWidth="1.8">
+                    <rect x="2" y="4" width="20" height="14" rx="2"/>
+                    <path d="M9 20h6M12 18v2"/>
+                  </svg>
+                  <span className="role-card-title">Instructor</span>
+                  <span className="role-card-desc">Create a session</span>
+                </div>
               </div>
             </div>
           ) : role === 'student' ? (

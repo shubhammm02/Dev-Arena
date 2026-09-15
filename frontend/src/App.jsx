@@ -76,6 +76,37 @@ function App() {
         })
         .catch(() => console.error('Could not restore room mode'))
     }
+
+    else if (savedRole === 'student' && savedRoom) {
+      const savedName = sessionStorage.getItem('devarena_student_name')
+      if (savedName) {
+        setRole('student')
+        setRoomCode(savedRoom)
+        setStudentName(savedName)
+
+        const savedSharedCode = sessionStorage.getItem('devarena_code')
+        if (savedSharedCode) setCode(savedSharedCode)
+
+        fetch(`http://127.0.0.1:8000/join-room/${savedRoom}?student_name=${savedName}`)
+          .then(res => res.json())
+          .then(data => {
+            if (!data.error) {
+              setStudentRoomMode(data.mode || 'teaching')
+              if (data.questions && data.questions.length > 0) {
+                setStudentQuestions(data.questions)
+                const savedQCode = JSON.parse(sessionStorage.getItem('devarena_question_code') || '{}')
+                const initialCode = {}
+                data.questions.forEach(q => {
+                  initialCode[q.id] = savedQCode[q.id] || 'print("Hello, Dev-Arena!")'
+                })
+                setQuestionCode(initialCode)
+              }
+              setJoined(true)
+            }
+          })
+          .catch(() => console.error('Could not restore student session'))
+      }
+    }
   }, [])
 
     useEffect(() => {
@@ -195,13 +226,17 @@ function App() {
         setStudentRoomMode(data.mode || 'teaching')
         if (data.questions && data.questions.length > 0) {
           setStudentQuestions(data.questions)
+          const savedCode = JSON.parse(sessionStorage.getItem('devarena_question_code') || '{}')
           const initialCode = {}
           data.questions.forEach(q => {
-            initialCode[q.id] = 'print("Hello, Dev-Arena!")'
+            initialCode[q.id] = savedCode[q.id] || 'print("Hello, Dev-Arena!")'
           })
           setQuestionCode(initialCode)
         }
         setJoined(true)
+        sessionStorage.setItem('devarena_role', 'student')
+        sessionStorage.setItem('devarena_room', roomCode)
+        sessionStorage.setItem('devarena_student_name', studentName)
       }
     } catch (err) {
       setJoinError('Could not reach backend')
@@ -416,7 +451,7 @@ const saveTeacherEdit = async (studentName) => {
                 <p className="output-label">Output: {submissions[selectedStudent].output}</p>
 
                 {editingStudent !== selectedStudent ? (
-                  <button className="small-btn" onClick={() => {
+                  <button className="edit-code-btn" onClick={() => {
                     setEditingStudent(selectedStudent)
                     setEditedCode(submissions[selectedStudent].code)
                   }}>
@@ -666,9 +701,14 @@ const saveTeacherEdit = async (studentName) => {
            value={activeCode}
            onChange={(value) => {
              if (studentRoomMode === 'assessment' && currentQuestion) {
-               setQuestionCode(prev => ({ ...prev, [currentQuestion.id]: value }))
+               setQuestionCode(prev => {
+                 const updated = { ...prev, [currentQuestion.id]: value }
+                 sessionStorage.setItem('devarena_question_code', JSON.stringify(updated))
+                 return updated
+               })
              } else {
                setCode(value)
+               sessionStorage.setItem('devarena_code', value)
              }
              if (ws) {
                clearTimeout(window.liveTypingTimeout)

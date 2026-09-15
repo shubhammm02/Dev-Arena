@@ -599,7 +599,11 @@ const saveTeacherEdit = async (studentName) => {
               <span className="teacher-edit-text">Your instructor updated your code</span>
               <div>
                 <button className="small-btn" style={{ marginRight: '6px' }} onClick={() => {
-                  setCode(pendingTeacherEdit)
+                  if (studentRoomMode === 'assessment' && currentQuestion) {
+                    setQuestionCode(prev => ({ ...prev, [currentQuestion.id]: pendingTeacherEdit }))
+                  } else {
+                    setCode(pendingTeacherEdit)
+                  }
                   setPendingTeacherEdit(null)
                 }}>
                   Apply

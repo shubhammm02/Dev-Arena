@@ -564,3 +564,31 @@ pre, code {
   font-size: 13px;
   margin: 10px 0;
 }
+
+.stdin-box {
+  width: 100%;
+  min-height: 60px;
+  padding: 10px 12px;
+  margin-top: 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: var(--font-code);
+  font-size: 13px;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.stdin-box:focus {
+  outline: none;
+  border-color: var(--accent-green);
+}
+
+.stdin-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin: 10px 0 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}

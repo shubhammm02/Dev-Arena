@@ -142,13 +142,15 @@ def run_code(payload: dict, db: Session = Depends(get_db)):
     student_name = payload.get("student_name", "Unknown")
     room_code = payload.get("room_code", "Unknown")
     question_id = payload.get("question_id")
+    stdin_input = payload.get("stdin", "")
 
     response = requests.post(
     "http://127.0.0.1:2000/api/v2/execute",
         json={
             "language": language,
             "version": "*",
-            "files": [{"content": code}]
+            "files": [{"content": code}],
+            "stdin": stdin_input
         }
     )
     result = response.json()

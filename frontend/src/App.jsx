@@ -16,6 +16,8 @@ function App() {
   }
   const [language, setLanguage] = useState('python')
   const [output, setOutput] = useState('')
+  const [stdinInput, setStdinInput] = useState('')
+  const [showStdin, setShowStdin] = useState(false)
   const [running, setRunning] = useState(false)
   const [roomCode, setRoomCode] = useState('')
   const [studentName, setStudentName] = useState('')
@@ -268,7 +270,8 @@ const saveTeacherEdit = async (studentName) => {
             language,
             student_name: role === 'student' ? studentName : instructorName,
             room_code: role === 'student' ? roomCode : createdRoomCode,
-            question_id: (studentRoomMode === 'assessment' && currentQuestion) ? currentQuestion.id : null
+            question_id: (studentRoomMode === 'assessment' && currentQuestion) ? currentQuestion.id : null,
+            stdin: stdinInput
         })
       })
 
@@ -659,6 +662,33 @@ const saveTeacherEdit = async (studentName) => {
            }}
            theme="vs-dark"
          />
+          {!showStdin ? (
+            <button
+              className="small-btn"
+              style={{ marginTop: '10px' }}
+              onClick={() => setShowStdin(true)}
+            >
+              + Add Input
+            </button>
+          ) : (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+                <p className="stdin-label" style={{ margin: 0 }}>Input (stdin)</p>
+                <button
+                  className="remove-question-btn"
+                  onClick={() => { setShowStdin(false); setStdinInput('') }}
+                >
+                  ✕ Remove
+                </button>
+              </div>
+              <textarea
+                className="stdin-box"
+                value={stdinInput}
+                onChange={(e) => setStdinInput(e.target.value)}
+                placeholder="Enter input values here, one per line if needed"
+              />
+            </div>
+          )}
           <button className="run-btn" onClick={runCode} disabled={running}>
             {running ? 'Running...' : 'Run'}
           </button>

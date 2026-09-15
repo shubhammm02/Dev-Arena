@@ -8,6 +8,12 @@ function App() {
   const [received, setReceived] = useState('')
   const [ws, setWs] = useState(null)
   const [code, setCode] = useState('print("Hello, Dev-Arena!")')
+  const starterCode = {
+    python: 'print("Hello, Dev-Arena!")',
+    c: '#include <stdio.h>\n\nint main() {\n    printf("Hello, Dev-Arena!\\n");\n    return 0;\n}',
+    'c++': '#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello, Dev-Arena!" << endl;\n    return 0;\n}',
+    java: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, Dev-Arena!");\n    }\n}'
+  }
   const [language, setLanguage] = useState('python')
   const [output, setOutput] = useState('')
   const [running, setRunning] = useState(false)
@@ -615,7 +621,16 @@ const saveTeacherEdit = async (studentName) => {
             </div>
           )}
 
-          <select className="language-select" value={language} onChange={(e) => setLanguage(e.target.value)}>
+          <select className="language-select" value={language} onChange={(e) => {
+            const newLang = e.target.value
+            setLanguage(newLang)
+            const newCode = starterCode[newLang] || ''
+            if (studentRoomMode === 'assessment' && currentQuestion) {
+              setQuestionCode(prev => ({ ...prev, [currentQuestion.id]: newCode }))
+            } else {
+              setCode(newCode)
+            }
+          }}>
           <option value="python">Python</option>
           <option value="c">C</option>
           <option value="c++">C++</option>

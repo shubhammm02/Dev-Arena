@@ -66,6 +66,8 @@ def join_room(room_code: str, student_name: str, db: Session = Depends(get_db)):
     room = db.query(Room).filter(Room.room_code == room_code).first()
     if not room:
         return {"error": "Room not found"}
+    if room.ended:
+        return {"error": "This session has ended and is no longer accepting students."}
 
     new_student = Student(name=student_name, room_code=room_code)
     db.add(new_student)
@@ -96,7 +98,16 @@ def room_mode(room_code: str, db: Session = Depends(get_db)):
     question_count = 0
     if room.mode == "assessment":
         question_count = db.query(Question).filter(Question.room_id == room.id).count()
-    return {"mode": room.mode, "question_count": question_count}
+    return {"mode": room.mode, "question_count": question_count, "ended": room.ended}
+
+@app.post("/end-session/{room_code}")
+def end_session(room_code: str, db: Session = Depends(get_db)):
+    room = db.query(Room).filter(Room.room_code == room_code).first()
+    if not room:
+        return {"error": "Room not found"}
+    room.ended = True
+    db.commit()
+    return {"message": "Session ended"}
 
 @app.get("/room-status/{room_code}")
 def room_status(room_code: str, db: Session = Depends(get_db)):

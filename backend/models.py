@@ -9,6 +9,7 @@ class Room(Base):
     room_code = Column(String, unique=True, index=True)
     instructor_name = Column(String)
     mode = Column(String, default="teaching")
+    ended = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class Student(Base):

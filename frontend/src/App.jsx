@@ -28,6 +28,7 @@ function App() {
   const [instructorName, setInstructorName] = useState('')
   const [roomMode, setRoomMode] = useState('teaching')
   const [totalQuestions, setTotalQuestions] = useState(0)
+  const [sessionEnded, setSessionEnded] = useState(false)
   const [questions, setQuestions] = useState([{ question_text: '', expected_output: '' }])
   const [submissions, setSubmissions] = useState({})
   const [editingStudent, setEditingStudent] = useState(null)
@@ -73,6 +74,7 @@ function App() {
         .then(data => {
           setRoomMode(data.mode || 'teaching')
           setTotalQuestions(data.question_count || 0)
+          setSessionEnded(!!data.ended)
         })
         .catch(() => console.error('Could not restore room mode'))
     }
@@ -87,24 +89,40 @@ function App() {
         const savedSharedCode = sessionStorage.getItem('devarena_code')
         if (savedSharedCode) setCode(savedSharedCode)
 
-        fetch(`http://127.0.0.1:8000/join-room/${savedRoom}?student_name=${savedName}`)
+        fetch(`http://127.0.0.1:8000/room-mode/${savedRoom}`)
           .then(res => res.json())
-          .then(data => {
-            if (!data.error) {
-              setStudentRoomMode(data.mode || 'teaching')
-              if (data.questions && data.questions.length > 0) {
-                setStudentQuestions(data.questions)
-                const savedQCode = JSON.parse(sessionStorage.getItem('devarena_question_code') || '{}')
-                const initialCode = {}
-                data.questions.forEach(q => {
-                  initialCode[q.id] = savedQCode[q.id] || 'print("Hello, Dev-Arena!")'
-                })
-                setQuestionCode(initialCode)
-              }
+          .then(modeData => {
+            if (modeData.error) return
+
+            setStudentRoomMode(modeData.mode || 'teaching')
+            setTotalQuestions(modeData.question_count || 0)
+
+            if (modeData.ended) {
+              const savedResults = JSON.parse(sessionStorage.getItem('devarena_question_results') || '{}')
+              setQuestionResults(savedResults)
+              setSessionEnded(true)
               setJoined(true)
+            } else {
+              fetch(`http://127.0.0.1:8000/join-room/${savedRoom}?student_name=${savedName}`)
+                .then(res => res.json())
+                .then(data => {
+                  if (!data.error) {
+                    if (data.questions && data.questions.length > 0) {
+                      setStudentQuestions(data.questions)
+                      const savedQCode = JSON.parse(sessionStorage.getItem('devarena_question_code') || '{}')
+                      const initialCode = {}
+                      data.questions.forEach(q => {
+                        initialCode[q.id] = savedQCode[q.id] || 'print("Hello, Dev-Arena!")'
+                      })
+                      setQuestionCode(initialCode)
+                    }
+                    setJoined(true)
+                  }
+                })
+                .catch(() => console.error('Could not restore student session'))
             }
           })
-          .catch(() => console.error('Could not restore student session'))
+          .catch(() => console.error('Could not check room mode'))
       }
     }
   }, [])
@@ -184,6 +202,10 @@ function App() {
           if (role === 'student' && parsed.student_name === studentName) {
             setHelpRequested(false)
           }
+        }
+
+        else if (parsed.type === 'session_ended') {
+          setSessionEnded(true)
         }
         
         else if (parsed.type === 'live_code') {
@@ -314,7 +336,11 @@ const saveTeacherEdit = async (studentName) => {
       setOutput(data.output || data.stderr || 'No output')
 
       if (studentRoomMode === 'assessment' && currentQuestion) {
-        setQuestionResults(prev => ({ ...prev, [currentQuestion.id]: data.is_correct }))
+        setQuestionResults(prev => {
+          const updated = { ...prev, [currentQuestion.id]: data.is_correct }
+          sessionStorage.setItem('devarena_question_results', JSON.stringify(updated))
+          return updated
+        })
       }
 
         if (ws && role === 'student') {
@@ -351,9 +377,35 @@ const saveTeacherEdit = async (studentName) => {
 
       {joined && role === 'instructor' && (
         <div className="dashboard-shell">
-          <p className="dashboard-room-code">
-            Room Code: <strong>{createdRoomCode}</strong>
-          </p>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '14px', marginBottom: '4px' }}>
+            <p className="dashboard-room-code" style={{ marginBottom: 0 }}>
+              Room Code: <strong>{createdRoomCode}</strong>
+            </p>
+            {!sessionEnded && (
+              <button
+                className="small-btn"
+                style={{ borderColor: 'var(--accent-red)', color: 'var(--accent-red)' }}
+                onClick={async () => {
+                  try {
+                    await fetch(`http://127.0.0.1:8000/end-session/${createdRoomCode}`, { method: 'POST' })
+                  } catch (err) {
+                    console.error('Could not mark session ended on server')
+                  }
+                  if (ws) {
+                    ws.send(JSON.stringify({ type: 'session_ended' }))
+                  }
+                  setSessionEnded(true)
+                }}
+              >
+                End Session
+              </button>
+            )}
+          </div>
+          {sessionEnded && (
+            <p style={{ textAlign: 'center', color: 'var(--accent-red)', fontSize: '13px', marginBottom: '14px' }}>
+              Session ended — showing final results
+            </p>
+          )}
 
           <div className="dashboard-card">
 
@@ -608,7 +660,24 @@ const saveTeacherEdit = async (studentName) => {
       ) : (
         <>
 
-        {role === 'student' && (
+        {role === 'student' && sessionEnded ? (
+          <div className="editor-shell">
+            <div className="dashboard-card" style={{ textAlign: 'center' }}>
+              <p style={{ color: 'var(--accent-red)', fontSize: '16px', fontWeight: 700, margin: '0 0 10px' }}>
+                Session Ended
+              </p>
+              {studentRoomMode === 'assessment' && totalQuestions > 0 ? (
+                <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                  You scored {Object.values(questionResults).filter(v => v === true).length}/{totalQuestions}
+                </p>
+              ) : (
+                <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                  Thanks for participating. Your instructor has ended this session.
+                </p>
+              )}
+            </div>
+          </div>
+        ) : role === 'student' && (
         <div className="editor-shell">
           <div className="editor-header">
             <h3 className="editor-title">Code Editor</h3>

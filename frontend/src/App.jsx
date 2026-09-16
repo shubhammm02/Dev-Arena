@@ -563,7 +563,12 @@ const saveTeacherEdit = async (studentName) => {
             </div>
           ) : role === 'student' ? (
             <div className="auth-card">
-              <h3>Join a Room</h3>
+              <div className="auth-card-header">
+                <button className="back-circle-btn" onClick={() => setRole(null)} aria-label="Back">
+                  ←
+                </button>
+                <h3>Join a Room</h3>
+              </div>
               <input
                 className="auth-input"
                 value={roomCode}
@@ -580,8 +585,13 @@ const saveTeacherEdit = async (studentName) => {
               {joinError && <p className="auth-error">{joinError}</p>}
             </div>
           ) : (
-            <div className="auth-card">
-              <h3>Create a Room</h3>
+                        <div className="auth-card">
+              <div className="auth-card-header">
+                <button className="back-circle-btn" onClick={() => setRole(null)} aria-label="Back">
+                  ←
+                </button>
+                <h3>Create a Room</h3>
+              </div>
               <input
                 className="auth-input"
                 value={instructorName}

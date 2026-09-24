@@ -1,6 +1,9 @@
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
+import os
 import requests
+
+PISTON_URL = os.environ.get("PISTON_URL", "http://80.225.240.5:2000")
 import json
 from database import engine, Base
 import random
@@ -156,7 +159,7 @@ def run_code(payload: dict, db: Session = Depends(get_db)):
     stdin_input = payload.get("stdin", "")
 
     response = requests.post(
-    "http://127.0.0.1:2000/api/v2/execute",
+        f"{PISTON_URL}/api/v2/execute",
         json={
             "language": language,
             "version": "*",

@@ -562,6 +562,37 @@ const saveTeacherEdit = async (studentName) => {
                   <span className="role-card-desc">Create a session</span>
                 </div>
               </div>
+
+              <div className="feature-highlights">
+                <div>
+                  <div className="feature-highlight-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <path d="M8.5 12.5a5 5 0 0 1 7 0" />
+                      <path d="M5.5 9.5a9 9 0 0 1 13 0" />
+                      <circle cx="12" cy="16" r="1.4" fill="currentColor" stroke="none" />
+                    </svg>
+                  </div>
+                  <p className="feature-highlight-label">Live code monitoring</p>
+                </div>
+                <div>
+                  <div className="feature-highlight-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <path d="M6 3h9l3 3v15H6z" />
+                      <path d="M9 12l2 2 4-4" />
+                    </svg>
+                  </div>
+                  <p className="feature-highlight-label">Instant assessment feedback</p>
+                </div>
+                <div>
+                  <div className="feature-highlight-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <path d="M8 5L2 12l6 7" />
+                      <path d="M16 5l6 7-6 7" />
+                    </svg>
+                  </div>
+                  <p className="feature-highlight-label">Multi-language support</p>
+                </div>
+              </div>
             </div>
           ) : role === 'student' ? (
             <div className="auth-card">

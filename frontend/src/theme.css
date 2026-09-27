@@ -672,3 +672,33 @@ pre, code {
   color: var(--accent-blue);
   border-color: var(--accent-blue);
 }
+
+/* Landing page feature highlights */
+.feature-highlights {
+  position: fixed;
+  bottom: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 100px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-subtle);
+  text-align: center;
+  width: 90%;
+  max-width: 640px;
+  justify-content: center;
+}
+
+.feature-highlight-icon {
+  color: var(--accent-green);
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: center;
+}
+
+.feature-highlight-label {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+}

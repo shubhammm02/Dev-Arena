@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import Editor, { DiffEditor } from '@monaco-editor/react'
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://127.0.0.1:8000'
 
 function App() {
   const [message, setMessage] = useState('Loading...')
@@ -49,7 +51,7 @@ function App() {
     : code
 
     useEffect(() => {
-    fetch('http://127.0.0.1:8000/')
+    fetch(API_URL + '/')
       .then(res => res.json())
       .then(() => setBackendOk(true))
       .catch(() => setBackendOk(false))
@@ -64,12 +66,12 @@ function App() {
       setCreatedRoomCode(savedRoom)
       setJoined(true)
 
-      fetch(`http://127.0.0.1:8000/room-status/${savedRoom}`)
+      fetch(`${API_URL}/room-status/${savedRoom}`)
         .then(res => res.json())
         .then(data => setSubmissions(data))
         .catch(() => console.error('Could not restore room status'))
 
-      fetch(`http://127.0.0.1:8000/room-mode/${savedRoom}`)
+      fetch(`${API_URL}/room-mode/${savedRoom}`)
         .then(res => res.json())
         .then(data => {
           setRoomMode(data.mode || 'teaching')
@@ -89,7 +91,7 @@ function App() {
         const savedSharedCode = sessionStorage.getItem('devarena_code')
         if (savedSharedCode) setCode(savedSharedCode)
 
-        fetch(`http://127.0.0.1:8000/room-mode/${savedRoom}`)
+        fetch(`${API_URL}/room-mode/${savedRoom}`)
           .then(res => res.json())
           .then(modeData => {
             if (modeData.error) return
@@ -103,7 +105,7 @@ function App() {
               setSessionEnded(true)
               setJoined(true)
             } else {
-              fetch(`http://127.0.0.1:8000/join-room/${savedRoom}?student_name=${savedName}`)
+              fetch(`${API_URL}/join-room/${savedRoom}?student_name=${savedName}`)
                 .then(res => res.json())
                 .then(data => {
                   if (!data.error) {
@@ -131,7 +133,7 @@ function App() {
     if (!joined) return
 
     const activeRoomCode = role === 'student' ? roomCode : createdRoomCode
-    const socket = new WebSocket(`ws://127.0.0.1:8000/ws/${activeRoomCode}`)
+    const socket = new WebSocket(`${WS_URL}/ws/${activeRoomCode}`)
 
     socket.onopen = () => {
       if (role === 'student') {
@@ -240,7 +242,7 @@ function App() {
   const joinRoom = async () => {
     setJoinError('')
     try {
-      const res = await fetch(`http://127.0.0.1:8000/join-room/${roomCode}?student_name=${studentName}`)
+      const res = await fetch(`${API_URL}/join-room/${roomCode}?student_name=${studentName}`)
       const data = await res.json()
       if (data.error) {
         setJoinError(data.error)
@@ -267,7 +269,7 @@ function App() {
 
 const createRoom = async () => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/create-room`, {
+      const res = await fetch(`${API_URL}/create-room`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -289,7 +291,7 @@ const createRoom = async () => {
 
 const saveTeacherEdit = async (studentName) => {
     try {
-      await fetch('http://127.0.0.1:8000/teacher-edit', {
+      await fetch(API_URL + '/teacher-edit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -319,7 +321,7 @@ const saveTeacherEdit = async (studentName) => {
     setOutput('Running...')
     const codeToRun = (studentRoomMode === 'assessment' && currentQuestion) ? activeCode : code
     try {
-            const res = await fetch('http://127.0.0.1:8000/run', {
+            const res = await fetch(API_URL + '/run', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -387,7 +389,7 @@ const saveTeacherEdit = async (studentName) => {
                 style={{ borderColor: 'var(--accent-red)', color: 'var(--accent-red)' }}
                 onClick={async () => {
                   try {
-                    await fetch(`http://127.0.0.1:8000/end-session/${createdRoomCode}`, { method: 'POST' })
+                    await fetch(`${API_URL}/end-session/${createdRoomCode}`, { method: 'POST' })
                   } catch (err) {
                     console.error('Could not mark session ended on server')
                   }

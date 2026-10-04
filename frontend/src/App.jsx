@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Editor, { DiffEditor } from '@monaco-editor/react'
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://127.0.0.1:8000'
@@ -44,6 +44,34 @@ function App() {
   const [questionCode, setQuestionCode] = useState({})
   const [questionResults, setQuestionResults] = useState({})
   const [helpRequested, setHelpRequested] = useState(false)
+  const [editorWidthPct, setEditorWidthPct] = useState(60)
+  const splitRef = useRef(null)
+  const draggingRef = useRef(false)
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!draggingRef.current || !splitRef.current) return
+      const rect = splitRef.current.getBoundingClientRect()
+      let pct = ((e.clientX - rect.left) / rect.width) * 100
+      pct = Math.max(30, Math.min(75, pct))
+      setEditorWidthPct(pct)
+    }
+    const handleMouseUp = () => {
+      draggingRef.current = false
+      document.body.style.userSelect = ''
+    }
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [])
+
+  const startDrag = () => {
+    draggingRef.current = true
+    document.body.style.userSelect = 'none'
+  }
 
   const currentQuestion = studentQuestions[currentQuestionIndex] || null
   const activeCode = (studentRoomMode === 'assessment' && currentQuestion)
@@ -363,19 +391,25 @@ const saveTeacherEdit = async (studentName) => {
     setRunning(false)
   }
 
+    const showFullPageEditor = joined && role === 'student' && !sessionEnded
+
     return (
-    <div className="app-shell">
-      <div className="app-title-row">
-        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="36" height="36" rx="8" fill="var(--accent-green-bg)" stroke="var(--accent-green)" strokeWidth="1.5"/>
-          <path d="M10 13L15 18L10 23" stroke="var(--accent-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M18 23H26" stroke="var(--accent-green)" strokeWidth="2" strokeLinecap="round"/>
-        </svg>
-        <h1 className="app-title">Dev-Arena</h1>
-      </div>
-      <p className="app-tagline">
-        {backendOk ? 'Teach live. Assess instantly.' : '⚠️ Backend not reachable'}
-      </p>
+    <div className={`app-shell ${showFullPageEditor ? 'app-shell-full' : ''}`}>
+      {!showFullPageEditor && (
+        <>
+          <div className="app-title-row">
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="36" height="36" rx="8" fill="var(--accent-green-bg)" stroke="var(--accent-green)" strokeWidth="1.5"/>
+              <path d="M10 13L15 18L10 23" stroke="var(--accent-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M18 23H26" stroke="var(--accent-green)" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            <h1 className="app-title">Dev-Arena</h1>
+          </div>
+          <p className="app-tagline">
+            {backendOk ? 'Teach live. Assess instantly.' : '⚠️ Backend not reachable'}
+          </p>
+        </>
+      )}
 
       {joined && role === 'instructor' && (
         <div className="dashboard-shell">
@@ -721,11 +755,18 @@ const saveTeacherEdit = async (studentName) => {
             </div>
           </div>
         ) : role === 'student' && (
-        <div className="editor-shell">
-          <div className="editor-header">
-            <h3 className="editor-title">Code Editor</h3>
+        <div className="editor-page">
+          <div className="editor-topbar">
+            <div className="editor-topbar-left">
+              <svg width="26" height="26" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="36" height="36" rx="8" fill="var(--accent-green-bg)" stroke="var(--accent-green)" strokeWidth="1.5"/>
+                <path d="M10 13L15 18L10 23" stroke="var(--accent-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M18 23H26" stroke="var(--accent-green)" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              <span className="editor-topbar-title">Dev-Arena</span>
+            </div>
             <button
-              className="help-btn"
+              className="help-btn-pill"
               disabled={helpRequested}
               onClick={() => {
                 if (ws) {
@@ -742,7 +783,7 @@ const saveTeacherEdit = async (studentName) => {
           </div>
 
           {studentRoomMode === 'assessment' && currentQuestion && (
-            <div className="question-banner">
+            <div className="question-banner-full">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                 <p className="question-banner-label" style={{ margin: 0 }}>ASSESSMENT QUESTION</p>
                 <span style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
@@ -792,87 +833,108 @@ const saveTeacherEdit = async (studentName) => {
             </div>
           )}
 
-          <select className="language-select" value={language} onChange={(e) => {
-            const newLang = e.target.value
-            setLanguage(newLang)
-            const newCode = starterCode[newLang] || ''
-            if (studentRoomMode === 'assessment' && currentQuestion) {
-              setQuestionCode(prev => ({ ...prev, [currentQuestion.id]: newCode }))
-            } else {
-              setCode(newCode)
-            }
-          }}>
-          <option value="python">Python</option>
-          <option value="c">C</option>
-          <option value="c++">C++</option>
-          <option value="java">Java</option>
-          </select>
-          <Editor
-           height="300px"
-           language={language}
-           value={activeCode}
-           onChange={(value) => {
-             if (studentRoomMode === 'assessment' && currentQuestion) {
-               setQuestionCode(prev => {
-                 const updated = { ...prev, [currentQuestion.id]: value }
-                 sessionStorage.setItem('devarena_question_code', JSON.stringify(updated))
-                 return updated
-               })
-             } else {
-               setCode(value)
-               sessionStorage.setItem('devarena_code', value)
-             }
-             if (ws) {
-               clearTimeout(window.liveTypingTimeout)
-               window.liveTypingTimeout = setTimeout(() => {
-                 ws.send(JSON.stringify({
-                   type: 'live_code',
-                   student_name: studentName,
-                   code: value
-                 }))
-               }, 800)
-             }
-           }}
-           theme="vs-dark"
-         />
-          {!showStdin ? (
-            <button
-              className="small-btn"
-              style={{ marginTop: '10px' }}
-              onClick={() => setShowStdin(true)}
-            >
-              + Add Input
-            </button>
-          ) : (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
-                <p className="stdin-label" style={{ margin: 0 }}>Input (stdin)</p>
-                <button
-                  className="remove-question-btn"
-                  onClick={() => { setShowStdin(false); setStdinInput('') }}
-                >
-                  ✕ Remove
-                </button>
+          <div className="split-container" ref={splitRef}>
+            <div className="code-pane" style={{ flexBasis: `${editorWidthPct}%` }}>
+              <div className="code-pane-header">
+                <div className="code-pane-header-left">
+                  <span className="file-tab">main.{language === 'c++' ? 'cpp' : language === 'python' ? 'py' : language === 'java' ? 'java' : 'c'}</span>
+                  <select className="language-select" value={language} onChange={(e) => {
+                    const newLang = e.target.value
+                    setLanguage(newLang)
+                    const newCode = starterCode[newLang] || ''
+                    if (studentRoomMode === 'assessment' && currentQuestion) {
+                      setQuestionCode(prev => ({ ...prev, [currentQuestion.id]: newCode }))
+                    } else {
+                      setCode(newCode)
+                    }
+                  }}>
+                    <option value="python">Python</option>
+                    <option value="c">C</option>
+                    <option value="c++">C++</option>
+                    <option value="java">Java</option>
+                  </select>
+                </div>
+                <div className="code-pane-header-right">
+                  <button
+                    className="add-input-btn"
+                    onClick={() => {
+                      if (showStdin) {
+                        setShowStdin(false)
+                        setStdinInput('')
+                      } else {
+                        setShowStdin(true)
+                      }
+                    }}
+                  >
+                    {showStdin ? '✕ Remove Input' : '+ Add Input'}
+                  </button>
+                  <button className="run-btn" onClick={runCode} disabled={running}>
+                    {running ? 'Running...' : 'Run'}
+                  </button>
+                </div>
               </div>
-              <textarea
-                className="stdin-box"
-                value={stdinInput}
-                onChange={(e) => setStdinInput(e.target.value)}
-                placeholder="Enter input values here, one per line if needed"
-              />
+              <div className="code-pane-editor">
+                <Editor
+                 height="100%"
+                 language={language}
+                 value={activeCode}
+                 onChange={(value) => {
+                   if (studentRoomMode === 'assessment' && currentQuestion) {
+                     setQuestionCode(prev => {
+                       const updated = { ...prev, [currentQuestion.id]: value }
+                       sessionStorage.setItem('devarena_question_code', JSON.stringify(updated))
+                       return updated
+                     })
+                   } else {
+                     setCode(value)
+                     sessionStorage.setItem('devarena_code', value)
+                   }
+                   if (ws) {
+                     clearTimeout(window.liveTypingTimeout)
+                     window.liveTypingTimeout = setTimeout(() => {
+                       ws.send(JSON.stringify({
+                         type: 'live_code',
+                         student_name: studentName,
+                         code: value
+                       }))
+                     }, 800)
+                   }
+                 }}
+                 theme="vs-dark"
+               />
+              </div>
             </div>
-          )}
-          <button className="run-btn" onClick={runCode} disabled={running}>
-            {running ? 'Running...' : 'Run'}
-          </button>
-          <pre className="output-box">
-            {output}
-          </pre>
-          {studentRoomMode === 'assessment' && currentQuestion && questionResults[currentQuestion.id] !== undefined && (
-            <p className={questionResults[currentQuestion.id] ? 'result-correct' : 'result-incorrect'}>
-              {questionResults[currentQuestion.id] ? '✅ Correct!' : '❌ Incorrect, try again'}
-            </p>
-          )}
+
+            <div className="split-divider" onMouseDown={startDrag}>
+              <div className="split-divider-handle"></div>
+            </div>
+
+            <div className="io-pane">
+              {showStdin && (
+                <div className="input-section">
+                  <div className="input-section-header">
+                    <span>Input (stdin)</span>
+                    <span className="remove-link" onClick={() => { setShowStdin(false); setStdinInput('') }}>✕ Remove</span>
+                  </div>
+                  <textarea
+                    className="stdin-box"
+                    value={stdinInput}
+                    onChange={(e) => setStdinInput(e.target.value)}
+                    placeholder="Enter input values here, one per line if needed"
+                  />
+                </div>
+              )}
+              <div className="output-pane-header">Output</div>
+              <pre className="output-box">
+                {output}
+              </pre>
+              {studentRoomMode === 'assessment' && currentQuestion && questionResults[currentQuestion.id] !== undefined && (
+                <div className={`result-banner ${questionResults[currentQuestion.id] ? 'correct' : 'incorrect'}`}>
+                  {questionResults[currentQuestion.id] ? '✅ Correct!' : '❌ Incorrect, try again'}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
         </>

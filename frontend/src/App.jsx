@@ -18,6 +18,7 @@ function App() {
   }
   const [language, setLanguage] = useState('python')
   const [output, setOutput] = useState('')
+  const [questionOutputs, setQuestionOutputs] = useState({})
   const [stdinInput, setStdinInput] = useState('')
   const [showStdin, setShowStdin] = useState(false)
   const [running, setRunning] = useState(false)
@@ -344,9 +345,17 @@ const saveTeacherEdit = async (studentName) => {
     }
 }
 
+  const showOutput = (text) => {
+    if (studentRoomMode === 'assessment' && currentQuestion) {
+      setQuestionOutputs(prev => ({ ...prev, [currentQuestion.id]: text }))
+    } else {
+      setOutput(text)
+    }
+  }
+
   const runCode = async () => {
     setRunning(true)
-    setOutput('Running...')
+    showOutput('Running...')
     const codeToRun = (studentRoomMode === 'assessment' && currentQuestion) ? activeCode : code
     try {
             const res = await fetch(API_URL + '/run', {
@@ -363,7 +372,7 @@ const saveTeacherEdit = async (studentName) => {
       })
 
       const data = await res.json()
-      setOutput(data.output || data.stderr || 'No output')
+      showOutput(data.output || data.stderr || 'No output')
 
       if (studentRoomMode === 'assessment' && currentQuestion) {
         setQuestionResults(prev => {
@@ -386,7 +395,7 @@ const saveTeacherEdit = async (studentName) => {
       }
 
     } catch (err) {
-      setOutput('Error: could not reach backend')
+      showOutput('Error: could not reach backend')
     }
     setRunning(false)
   }
@@ -784,28 +793,33 @@ const saveTeacherEdit = async (studentName) => {
 
           {studentRoomMode === 'assessment' && currentQuestion && (
             <div className="question-banner-full">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <p className="question-banner-label" style={{ margin: 0 }}>ASSESSMENT QUESTION</p>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
-                  Question {currentQuestionIndex + 1} of {studentQuestions.length}
-                </span>
+              <div className="question-banner-main">
+                <p className="question-banner-label">ASSESSMENT QUESTION</p>
+                <p className="question-banner-text">
+                  <span className="question-number">Q{currentQuestionIndex + 1}</span>
+                  <span>{currentQuestion.question_text}</span>
+                </p>
               </div>
-              <p className="question-banner-text">{currentQuestion.question_text}</p>
               {studentQuestions.length > 1 && (
-                <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                <div className="question-pager">
                   <button
-                    className="small-btn"
+                    className="question-nav-btn"
                     disabled={currentQuestionIndex === 0}
                     onClick={() => setCurrentQuestionIndex(i => i - 1)}
+                    aria-label="Previous question"
                   >
-                    ← Previous
+                    &lt;
                   </button>
+                  <span className="question-counter">
+                    <strong>{currentQuestionIndex + 1}</strong> / {studentQuestions.length}
+                  </span>
                   <button
-                    className="small-btn"
+                    className="question-nav-btn"
                     disabled={currentQuestionIndex === studentQuestions.length - 1}
                     onClick={() => setCurrentQuestionIndex(i => i + 1)}
+                    aria-label="Next question"
                   >
-                    Next →
+                    &gt;
                   </button>
                 </div>
               )}
@@ -926,7 +940,9 @@ const saveTeacherEdit = async (studentName) => {
               )}
               <div className="output-pane-header">Output</div>
               <pre className="output-box">
-                {output}
+                {(studentRoomMode === 'assessment' && currentQuestion)
+                  ? (questionOutputs[currentQuestion.id] ?? '')
+                  : output}
               </pre>
               {studentRoomMode === 'assessment' && currentQuestion && questionResults[currentQuestion.id] !== undefined && (
                 <div className={`result-banner ${questionResults[currentQuestion.id] ? 'correct' : 'incorrect'}`}>

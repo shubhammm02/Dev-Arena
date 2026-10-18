@@ -73,58 +73,6 @@ pre, code {
   margin: 0 0 40px;
 }
 
-.role-heading {
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  margin: 0 0 16px;
-}
-
-.role-buttons {
-  display: flex;
-  gap: 12px;
-}
-
-.role-card {
-  width: 200px;
-  padding: 28px 20px;
-  border-radius: 10px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  font-family: var(--font-ui);
-  cursor: pointer;
-  transition: border-color 0.2s, background 0.2s, transform 0.15s;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-.role-card:hover {
-  transform: translateY(-2px);
-}
-
-.role-card.student:hover {
-  border-color: var(--accent-blue);
-  background: #1c2128;
-}
-
-.role-card.instructor:hover {
-  border-color: var(--accent-amber);
-  background: #1c2128;
-}
-
-.role-card-title {
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.role-card-desc {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
 /* Auth cards (join room / create room) */
 .auth-card {
   position: relative;
@@ -302,45 +250,6 @@ pre, code {
   box-sizing: border-box;
 }
 
-.editor-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.editor-title {
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0;
-}
-
-.help-btn {
-  background: var(--accent-blue);
-  color: white;
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: none;
-  font-family: var(--font-ui);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.help-btn:hover {
-  opacity: 0.9;
-}
-
-.question-banner {
-  background: var(--bg-secondary);
-  border: 1px solid var(--accent-amber);
-  border-radius: 8px;
-  padding: 14px 16px;
-  margin-bottom: 16px;
-}
-
 .question-banner-label {
   color: var(--accent-amber);
   font-size: 11px;
@@ -431,20 +340,6 @@ pre, code {
   font-size: 13px;
   white-space: pre-wrap;
   word-break: break-word;
-}
-
-.result-correct {
-  color: var(--accent-green);
-  font-weight: 700;
-  font-size: 14px;
-  margin-top: 10px;
-}
-
-.result-incorrect {
-  color: var(--accent-red);
-  font-weight: 700;
-  font-size: 14px;
-  margin-top: 10px;
 }
 
 /* Instructor dashboard */
@@ -616,14 +511,6 @@ pre, code {
   border-color: var(--accent-green);
 }
 
-.stdin-label {
-  font-size: 11px;
-  color: var(--text-secondary);
-  margin: 10px 0 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
 .app-title-row {
   display: flex;
   align-items: center;
@@ -679,36 +566,6 @@ pre, code {
   background: rgba(31, 111, 235, 0.15);
   color: var(--accent-blue);
   border-color: var(--accent-blue);
-}
-
-/* Landing page feature highlights */
-.feature-highlights {
-  position: fixed;
-  bottom: 48px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 100px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border-subtle);
-  text-align: center;
-  width: 90%;
-  max-width: 640px;
-  justify-content: center;
-}
-
-.feature-highlight-icon {
-  color: var(--accent-green);
-  margin-bottom: 8px;
-  display: flex;
-  justify-content: center;
-}
-
-.feature-highlight-label {
-  color: var(--text-primary);
-  font-size: 14px;
-  font-weight: 500;
-  margin: 0;
 }
 
 /* Full-page split editor layout */
@@ -867,10 +724,6 @@ pre, code {
 
 .code-pane {
   min-width: 280px;
-}
-
-.io-pane {
-  min-width: 220px;
 }
 
 .file-tab {

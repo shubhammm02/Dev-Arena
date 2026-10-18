@@ -401,10 +401,11 @@ const saveTeacherEdit = async (studentName) => {
   }
 
     const showFullPageEditor = joined && role === 'student' && !sessionEnded
+    const showLanding = !joined && !role
 
     return (
-    <div className={`app-shell ${showFullPageEditor ? 'app-shell-full' : ''}`}>
-      {!showFullPageEditor && (
+    <div className={`app-shell ${showFullPageEditor ? 'app-shell-full' : ''} ${showLanding ? 'app-shell-landing' : ''}`}>
+      {!showFullPageEditor && !showLanding && (
         <>
           <div className="app-title-row">
             <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -586,55 +587,100 @@ const saveTeacherEdit = async (studentName) => {
         <div>
           {!role ? (
             <div>
-              <p className="role-heading">I am a...</p>
-              <div className="role-buttons">
-                <div className="role-card student" onClick={() => setRole('student')}>
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" strokeWidth="1.8">
-                    <circle cx="12" cy="8" r="4"/>
-                    <path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>
-                  </svg>
-                  <span className="role-card-title">Student</span>
-                  <span className="role-card-desc">Join with a room code</span>
+              <div className="landing">
+                <div className="landing-nav">
+                  <div className="landing-brand">
+                    <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect width="36" height="36" rx="8" fill="var(--accent-green-bg)" stroke="var(--accent-green)" strokeWidth="1.5"/>
+                      <path d="M10 13L15 18L10 23" stroke="var(--accent-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M18 23H26" stroke="var(--accent-green)" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                    <span>Dev-Arena</span>
+                  </div>
+                  <span className="landing-langs">Python · C · C++ · Java</span>
                 </div>
-                <div className="role-card instructor" onClick={() => setRole('instructor')}>
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-amber)" strokeWidth="1.8">
-                    <rect x="2" y="4" width="20" height="14" rx="2"/>
-                    <path d="M9 20h6M12 18v2"/>
-                  </svg>
-                  <span className="role-card-title">Instructor</span>
-                  <span className="role-card-desc">Create a session</span>
-                </div>
-              </div>
 
-              <div className="feature-highlights">
-                <div>
-                  <div className="feature-highlight-icon">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                {!backendOk && <p className="landing-warning">⚠️ Backend not reachable</p>}
+
+                <div className="landing-main">
+                <div className="landing-hero">
+                  <h1 className="landing-title">Teach live.<br /><span>Assess instantly.</span></h1>
+                  <p className="landing-sub">Create a room, share the code, and your whole class writes and runs code right in the browser.</p>
+                  <div className="landing-cta">
+                    <button className="cta-student" onClick={() => setRole('student')}>Join as Student →</button>
+                    <button className="cta-instructor" onClick={() => setRole('instructor')}>Create a Session</button>
+                  </div>
+                  <p className="landing-note">No sign-up needed. Just a room code.</p>
+                </div>
+
+                <div className="landing-preview">
+                  <div className="dashboard-card">
+                    <div className="landing-preview-head">
+                      <span>Room Code: <strong>K7P2QX</strong></span>
+                      <span className="landing-live"><span className="landing-live-dot"></span>Live</span>
+                    </div>
+                    <div className="status-legend">
+                      <span><span className="status-dot" style={{ background: 'var(--accent-green)' }}></span>2 All Correct</span>
+                      <span><span className="status-dot" style={{ background: 'var(--accent-red)' }}></span>1 Needs Work</span>
+                      <span><span className="status-dot" style={{ background: 'var(--accent-gray)' }}></span>0 Not run yet</span>
+                    </div>
+                    <p className="connected-count">3 students connected</p>
+                    <div className="student-row">
+                      <div className="student-row-left">
+                        <span className="student-row-dot" style={{ background: 'var(--accent-green)' }}></span>
+                        <span className="student-name">aarav</span>
+                        <span className="correctness-badge correct">2/2 Correct</span>
+                      </div>
+                      <span className="chevron">›</span>
+                    </div>
+                    <div className="student-row">
+                      <div className="student-row-left">
+                        <span className="student-row-dot" style={{ background: 'var(--accent-green)' }}></span>
+                        <span className="student-name">diya</span>
+                        <span className="correctness-badge correct">2/2 Correct</span>
+                      </div>
+                      <span className="chevron">›</span>
+                    </div>
+                    <div className="student-row">
+                      <div className="student-row-left">
+                        <span className="student-row-dot" style={{ background: 'var(--accent-green)' }}></span>
+                        <span className="student-name">kabir</span>
+                        <span className="correctness-badge partial">1/2 Correct</span>
+                        <span>🖐️</span>
+                      </div>
+                      <span className="chevron">›</span>
+                    </div>
+                  </div>
+                </div>
+
+                </div>
+
+                <div className="landing-features">
+                  <span className="landing-feature">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                       <path d="M8.5 12.5a5 5 0 0 1 7 0" />
                       <path d="M5.5 9.5a9 9 0 0 1 13 0" />
                       <circle cx="12" cy="16" r="1.4" fill="currentColor" stroke="none" />
                     </svg>
-                  </div>
-                  <p className="feature-highlight-label">Live code monitoring</p>
-                </div>
-                <div>
-                  <div className="feature-highlight-icon">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    Live code monitoring
+                  </span>
+                  <span className="landing-feature">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                       <path d="M6 3h9l3 3v15H6z" />
                       <path d="M9 12l2 2 4-4" />
                     </svg>
-                  </div>
-                  <p className="feature-highlight-label">Instant assessment feedback</p>
-                </div>
-                <div>
-                  <div className="feature-highlight-icon">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    Instant assessment feedback
+                  </span>
+                  <span className="landing-feature">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                       <path d="M8 5L2 12l6 7" />
                       <path d="M16 5l6 7-6 7" />
                     </svg>
-                  </div>
-                  <p className="feature-highlight-label">Multi-language support</p>
+                    Multi-language support
+                  </span>
                 </div>
+
+                <div className="landing-footer">Dev-Arena · Final year project 2026</div>
               </div>
             </div>
           ) : role === 'student' ? (

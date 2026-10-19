@@ -3,6 +3,22 @@ import Editor, { DiffEditor } from '@monaco-editor/react'
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://127.0.0.1:8000'
 
+function SiteNav() {
+  return (
+    <div className="landing-nav">
+      <div className="landing-brand">
+        <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="36" height="36" rx="8" fill="var(--accent-green-bg)" stroke="var(--accent-green)" strokeWidth="1.5"/>
+          <path d="M10 13L15 18L10 23" stroke="var(--accent-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M18 23H26" stroke="var(--accent-green)" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+        <span>Dev-Arena</span>
+      </div>
+      <span className="landing-langs">Python · C · C++ · Java</span>
+    </div>
+  )
+}
+
 function App() {
   const [message, setMessage] = useState('Loading...')
   const [backendOk, setBackendOk] = useState(true)
@@ -402,10 +418,11 @@ const saveTeacherEdit = async (studentName) => {
 
     const showFullPageEditor = joined && role === 'student' && !sessionEnded
     const showLanding = !joined && !role
+    const showAuth = !joined && !!role
 
     return (
-    <div className={`app-shell ${showFullPageEditor ? 'app-shell-full' : ''} ${showLanding ? 'app-shell-landing' : ''}`}>
-      {!showFullPageEditor && !showLanding && (
+    <div className={`app-shell ${showFullPageEditor ? 'app-shell-full' : ''} ${showLanding || showAuth ? 'app-shell-landing' : ''}`}>
+      {!showFullPageEditor && !showLanding && !showAuth && (
         <>
           <div className="app-title-row">
             <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -684,108 +701,162 @@ const saveTeacherEdit = async (studentName) => {
               </div>
             </div>
           ) : role === 'student' ? (
-            <div className="auth-card">
-              <div className="auth-card-header">
-                <button className="back-circle-btn" onClick={() => setRole(null)} aria-label="Back">
-                  ←
-                </button>
-                <h3>Join a Room</h3>
+            <div className="landing auth-page">
+              <SiteNav />
+              <div className="auth-page-body">
+                <div className="auth-panel">
+                  <div className="auth-panel-header">
+                    <button className="back-circle-btn" onClick={() => setRole(null)} aria-label="Back">
+                      ←
+                    </button>
+                    <h2 className="auth-panel-title">Join a room</h2>
+                  </div>
+                  <p className="auth-panel-sub">Enter the code your instructor shared.</p>
+
+                  <label className="field-label" htmlFor="room-code">Room code</label>
+                  <input
+                    id="room-code"
+                    className="field-input field-input-code"
+                    value={roomCode}
+                    onChange={(e) => setRoomCode(e.target.value)}
+                    placeholder="e.g. K7P2QX"
+                  />
+
+                  <label className="field-label" htmlFor="student-name">Your name</label>
+                  <input
+                    id="student-name"
+                    className="field-input"
+                    value={studentName}
+                    onChange={(e) => setStudentName(e.target.value)}
+                    placeholder="e.g. Aarav"
+                  />
+
+                  <button className="primary-btn" onClick={joinRoom}>Join room →</button>
+                  {joinError && <p className="auth-error">{joinError}</p>}
+                  <p className="auth-panel-note">No sign-up needed. Just a room code.</p>
+                </div>
               </div>
-              <input
-                className="auth-input"
-                value={roomCode}
-                onChange={(e) => setRoomCode(e.target.value)}
-                placeholder="Room Code"
-              />
-              <input
-                className="auth-input"
-                value={studentName}
-                onChange={(e) => setStudentName(e.target.value)}
-                placeholder="Your Name"
-              />
-              <button className="auth-btn" onClick={joinRoom}>Join</button>
-              {joinError && <p className="auth-error">{joinError}</p>}
             </div>
           ) : (
-                        <div className="auth-card">
-              <div className="auth-card-header">
-                <button className="back-circle-btn" onClick={() => setRole(null)} aria-label="Back">
-                  ←
-                </button>
-                <h3>Create a Room</h3>
-              </div>
-              <input
-                className="auth-input"
-                value={instructorName}
-                onChange={(e) => setInstructorName(e.target.value)}
-                placeholder="Your Name"
-              />
+           <div className="landing auth-page">
+              <SiteNav />
+              <div className="auth-page-body">
+                <div className="auth-panel auth-panel-wide">
+                  <div className="auth-panel-header">
+                    <button className="back-circle-btn" onClick={() => setRole(null)} aria-label="Back">
+                      ←
+                    </button>
+                    <h2 className="auth-panel-title">Create a room</h2>
+                  </div>
+                  <p className="auth-panel-sub">Start a live session for your class.</p>
 
-              <div className="mode-toggle">
-                <button
-                  className={`mode-btn ${roomMode === 'teaching' ? 'active-teaching' : ''}`}
-                  onClick={() => setRoomMode('teaching')}
-                >
-                  Teaching Mode
-                </button>
-                <button
-                  className={`mode-btn ${roomMode === 'assessment' ? 'active-assessment' : ''}`}
-                  onClick={() => setRoomMode('assessment')}
-                >
-                  Assessment Mode
-                </button>
-              </div>
+                  <label className="field-label" htmlFor="instructor-name">Your name</label>
+                  <input
+                    id="instructor-name"
+                    className="field-input"
+                    value={instructorName}
+                    onChange={(e) => setInstructorName(e.target.value)}
+                    placeholder="e.g. Prof. Sharma"
+                  />
 
-              {roomMode === 'assessment' && (
-                <div>
-                  {questions.map((q, index) => (
-                    <div key={index} className="question-block">
-                      <div className="question-block-header">
-                        <p className="question-label" style={{ margin: 0 }}>Question {index + 1}</p>
-                        {questions.length > 1 && (
-                          <button
-                            className="remove-question-btn"
-                            onClick={() => setQuestions(questions.filter((_, i) => i !== index))}
-                          >
-                            ✕ Remove
-                          </button>
-                        )}
+                  <label className="field-label">Session mode</label>
+                  <div className="mode-cards">
+                    <button
+                      type="button"
+                      className={`mode-card teach ${roomMode === 'teaching' ? 'selected' : ''}`}
+                      onClick={() => setRoomMode('teaching')}
+                    >
+                      <span className="mode-card-top">
+                        <span className="mode-card-icon">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M8.5 12.5a5 5 0 0 1 7 0" />
+                            <path d="M5.5 9.5a9 9 0 0 1 13 0" />
+                            <circle cx="12" cy="16" r="1.4" fill="currentColor" stroke="none" />
+                          </svg>
+                        </span>
+                        <span className="mode-card-title">Teaching</span>
+                      </span>
+                      <span className="mode-card-desc">Watch students code live and help them as they go.</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`mode-card assess ${roomMode === 'assessment' ? 'selected' : ''}`}
+                      onClick={() => setRoomMode('assessment')}
+                    >
+                      <span className="mode-card-top">
+                        <span className="mode-card-icon">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M6 3h9l3 3v15H6z" />
+                            <path d="M9 12l2 2 4-4" />
+                          </svg>
+                        </span>
+                        <span className="mode-card-title">Assessment</span>
+                      </span>
+                      <span className="mode-card-desc">Set questions with expected output. Answers are checked automatically.</span>
+                    </button>
+                  </div>
+
+                  {roomMode === 'assessment' && (
+                    <div className="questions-section">
+                      <div className="questions-head">
+                        <label className="field-label">Questions</label>
+                        <span className="questions-count">{questions.length} added</span>
                       </div>
-                      <textarea
-                        className="question-textarea"
-                        value={q.question_text}
-                        onChange={(e) => {
-                          const updated = [...questions]
-                          updated[index].question_text = e.target.value
-                          setQuestions(updated)
-                        }}
-                        placeholder="Question text"
-                      />
-                      <input
-                        className="auth-input"
-                        style={{ marginBottom: 0 }}
-                        value={q.expected_output}
-                        onChange={(e) => {
-                          const updated = [...questions]
-                          updated[index].expected_output = e.target.value
-                          setQuestions(updated)
-                        }}
-                        placeholder="Expected output"
-                      />
-                    </div>
-                  ))}
-                  <button className="add-question-btn" onClick={() => setQuestions([...questions, { question_text: '', expected_output: '' }])}>
-                    + Add Question
-                  </button>
-                </div>
-              )}
 
-              <button className="auth-btn" onClick={createRoom}>Create Room</button>
-              {createdRoomCode && (
-                <p style={{ color: 'var(--accent-green)', fontSize: '13px', marginTop: '10px' }}>
-                  Room Created! Share this code: <strong>{createdRoomCode}</strong>
-                </p>
-              )}
+                      {questions.map((q, index) => (
+                        <div key={index} className="question-card">
+                          <div className="question-card-header">
+                            <span className="question-card-label">QUESTION {index + 1}</span>
+                            {questions.length > 1 && (
+                              <button
+                                className="remove-question-btn"
+                                onClick={() => setQuestions(questions.filter((_, i) => i !== index))}
+                              >
+                                ✕ Remove
+                              </button>
+                            )}
+                          </div>
+                          <textarea
+                            className="question-card-textarea"
+                            value={q.question_text}
+                            onChange={(e) => {
+                              const updated = [...questions]
+                              updated[index].question_text = e.target.value
+                              setQuestions(updated)
+                            }}
+                            placeholder="e.g. Print the sum of 6 and 8"
+                          />
+                          <input
+                            className="question-card-input"
+                            value={q.expected_output}
+                            onChange={(e) => {
+                              const updated = [...questions]
+                              updated[index].expected_output = e.target.value
+                              setQuestions(updated)
+                            }}
+                            placeholder="Expected output, e.g. 14"
+                          />
+                        </div>
+                      ))}
+
+                      <button
+                        className="add-question-btn"
+                        onClick={() => setQuestions([...questions, { question_text: '', expected_output: '' }])}
+                      >
+                        + Add question
+                      </button>
+                    </div>
+                  )}
+
+                  <button className="primary-btn" onClick={createRoom}>Create room</button>
+                  {createdRoomCode && (
+                    <p style={{ color: 'var(--accent-green)', fontSize: '13px', marginTop: '10px' }}>
+                      Room Created! Share this code: <strong>{createdRoomCode}</strong>
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>

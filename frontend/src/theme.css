@@ -1516,3 +1516,196 @@ pre, code {
   padding: 11px;
   margin-bottom: 20px;
 }
+
+/* Instructor dashboard layout */
+.app-shell-dash {
+  padding: 0;
+  align-items: stretch;
+}
+
+.dash-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.dash-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.room-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.room-pill strong {
+  color: var(--text-primary);
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.copy-btn {
+  display: inline-flex;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.copy-btn:hover {
+  color: var(--text-primary);
+}
+
+.end-session-btn {
+  height: 34px;
+  padding: 0 16px;
+  background: transparent;
+  border: 1px solid var(--accent-red);
+  border-radius: 8px;
+  color: var(--accent-red);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.end-session-btn:hover {
+  background: var(--accent-red-bg);
+}
+
+.dash-body {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.dash-body .dashboard-card {
+  max-width: none;
+}
+
+.dash-ended-note {
+  margin: 0 0 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--accent-red);
+}
+
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.stat-card-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.stat-card-value {
+  margin-top: 4px;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.stat-card-value.green {
+  color: var(--accent-green);
+}
+
+.stat-card-value.red {
+  color: var(--accent-red);
+}
+
+.status-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.status-badge.ok {
+  background: var(--accent-green-bg);
+  color: var(--accent-green);
+}
+
+.status-badge.error {
+  background: var(--accent-red-bg);
+  color: var(--accent-red);
+}
+
+.status-badge.none {
+  background: var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.dashboard-card .stat-card {
+  background: var(--bg-primary);
+}
+
+.stat-card-label .status-dot {
+  margin-right: 0;
+}
+
+.dash-title {
+  margin: 8px 0 22px;
+  text-align: center;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.room-pill {
+  position: relative;
+}
+
+.copy-btn.copied {
+  color: var(--accent-green);
+}
+
+.copied-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  padding: 5px 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--accent-green);
+  border-radius: 6px;
+  color: var(--accent-green);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  animation: copied-in 0.15s ease-out;
+}
+
+@keyframes copied-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

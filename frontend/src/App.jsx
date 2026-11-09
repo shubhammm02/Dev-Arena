@@ -61,6 +61,7 @@ function App() {
   const [questionCode, setQuestionCode] = useState({})
   const [questionResults, setQuestionResults] = useState({})
   const [helpRequested, setHelpRequested] = useState(false)
+  const [codeCopied, setCodeCopied] = useState(false)
   const [editorWidthPct, setEditorWidthPct] = useState(60)
   const splitRef = useRef(null)
   const draggingRef = useRef(false)
@@ -419,10 +420,23 @@ const saveTeacherEdit = async (studentName) => {
     const showFullPageEditor = joined && role === 'student' && !sessionEnded
     const showLanding = !joined && !role
     const showAuth = !joined && !!role
+    const showDashboard = joined && role === 'instructor'
+
+    const endSession = async () => {
+      try {
+        await fetch(`${API_URL}/end-session/${createdRoomCode}`, { method: 'POST' })
+      } catch (err) {
+        console.error('Could not mark session ended on server')
+      }
+      if (ws) {
+        ws.send(JSON.stringify({ type: 'session_ended' }))
+      }
+      setSessionEnded(true)
+    }
 
     return (
-    <div className={`app-shell ${showFullPageEditor ? 'app-shell-full' : ''} ${showLanding || showAuth ? 'app-shell-landing' : ''}`}>
-      {!showFullPageEditor && !showLanding && !showAuth && (
+    <div className={`app-shell ${showFullPageEditor ? 'app-shell-full' : ''} ${showLanding || showAuth || showDashboard ? 'app-shell-landing' : ''} ${showDashboard ? 'app-shell-dash' : ''}`}>
+      {!showFullPageEditor && !showLanding && !showAuth && !showDashboard && (
         <>
           <div className="app-title-row">
             <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -438,60 +452,97 @@ const saveTeacherEdit = async (studentName) => {
         </>
       )}
 
-      {joined && role === 'instructor' && (
-        <div className="dashboard-shell">
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '14px', marginBottom: '4px' }}>
-            <p className="dashboard-room-code" style={{ marginBottom: 0 }}>
-              Room Code: <strong>{createdRoomCode}</strong>
-            </p>
-            {!sessionEnded && (
+      {showDashboard && (
+        <div className="dash-topbar">
+          <div className="editor-topbar-left">
+            <svg width="26" height="26" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="36" height="36" rx="8" fill="var(--accent-green-bg)" stroke="var(--accent-green)" strokeWidth="1.5"/>
+              <path d="M10 13L15 18L10 23" stroke="var(--accent-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M18 23H26" stroke="var(--accent-green)" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            <span className="editor-topbar-title">Dev-Arena</span>
+          </div>
+          <div className="dash-topbar-right">
+            <div className="room-pill">
+              <span>Room</span>
+              <strong>{createdRoomCode}</strong>
               <button
-                className="small-btn"
-                style={{ borderColor: 'var(--accent-red)', color: 'var(--accent-red)' }}
-                onClick={async () => {
-                  try {
-                    await fetch(`${API_URL}/end-session/${createdRoomCode}`, { method: 'POST' })
-                  } catch (err) {
-                    console.error('Could not mark session ended on server')
-                  }
-                  if (ws) {
-                    ws.send(JSON.stringify({ type: 'session_ended' }))
-                  }
-                  setSessionEnded(true)
+                className={`copy-btn ${codeCopied ? 'copied' : ''}`}
+                aria-label="Copy room code"
+                title="Copy room code"
+                onClick={() => {
+                  navigator.clipboard.writeText(createdRoomCode)
+                  setCodeCopied(true)
+                  setTimeout(() => setCodeCopied(false), 1500)
                 }}
               >
-                End Session
+                {codeCopied ? (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12l5 5L20 7" />
+                  </svg>
+                ) : (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="9" width="11" height="11" rx="2" />
+                    <path d="M5 15V6a2 2 0 0 1 2-2h9" />
+                  </svg>
+                )}
               </button>
+              {codeCopied && <span className="copied-pop">Copied!</span>}
+            </div>
+            {!sessionEnded && (
+              <button className="end-session-btn" onClick={endSession}>End Session</button>
             )}
           </div>
+        </div>
+      )}
+
+      {joined && role === 'instructor' && (
+        <div className="dash-body">
+          <h1 className="dash-title">Instructor Dashboard</h1>
           {sessionEnded && (
-            <p style={{ textAlign: 'center', color: 'var(--accent-red)', fontSize: '13px', marginBottom: '14px' }}>
-              Session ended — showing final results
-            </p>
+            <p className="dash-ended-note">Session ended — showing final results</p>
           )}
 
           <div className="dashboard-card">
 
             {!selectedStudent ? (
               <>
-               <div className="status-legend">
+                <div className="stat-cards">
                   {roomMode === 'assessment' && totalQuestions > 0 ? (
                     <>
-                      <span><span className="status-dot" style={{ background: 'var(--accent-green)' }}></span>{Object.values(submissions).filter(s => {
-                        const results = s.question_results || {}
-                        return Object.values(results).filter(v => v === true).length === totalQuestions && Object.keys(results).length > 0
-                      }).length} All Correct</span>
-                      <span><span className="status-dot" style={{ background: 'var(--accent-red)' }}></span>{Object.values(submissions).filter(s => {
-                        const results = s.question_results || {}
-                        return Object.keys(results).length > 0 && Object.values(results).filter(v => v === true).length < totalQuestions
-                      }).length} Needs Work</span>
-                      <span><span className="status-dot" style={{ background: 'var(--accent-gray)' }}></span>{Object.values(submissions).filter(s => Object.keys(s.question_results || {}).length === 0).length} Not run yet</span>
+                      <div className="stat-card">
+                        <div className="stat-card-label"><span className="status-dot" style={{ background: 'var(--accent-green)' }}></span>All Correct</div>
+                        <div className="stat-card-value green">{Object.values(submissions).filter(s => {
+                          const results = s.question_results || {}
+                          return Object.values(results).filter(v => v === true).length === totalQuestions && Object.keys(results).length > 0
+                        }).length}</div>
+                      </div>
+                      <div className="stat-card">
+                        <div className="stat-card-label"><span className="status-dot" style={{ background: 'var(--accent-red)' }}></span>Needs Work</div>
+                        <div className="stat-card-value red">{Object.values(submissions).filter(s => {
+                          const results = s.question_results || {}
+                          return Object.keys(results).length > 0 && Object.values(results).filter(v => v === true).length < totalQuestions
+                        }).length}</div>
+                      </div>
+                      <div className="stat-card">
+                        <div className="stat-card-label"><span className="status-dot" style={{ background: 'var(--accent-gray)' }}></span>Not run yet</div>
+                        <div className="stat-card-value">{Object.values(submissions).filter(s => Object.keys(s.question_results || {}).length === 0).length}</div>
+                      </div>
                     </>
                   ) : (
                     <>
-                      <span><span className="status-dot" style={{ background: 'var(--accent-green)' }}></span>{Object.values(submissions).filter(s => s.status !== 'error' && s.status !== 'none').length} Success</span>
-                      <span><span className="status-dot" style={{ background: 'var(--accent-red)' }}></span>{Object.values(submissions).filter(s => s.status === 'error').length} Error</span>
-                      <span><span className="status-dot" style={{ background: 'var(--accent-gray)' }}></span>{Object.values(submissions).filter(s => s.status === 'none').length} Not run yet</span>
+                      <div className="stat-card">
+                        <div className="stat-card-label"><span className="status-dot" style={{ background: 'var(--accent-green)' }}></span>Success</div>
+                        <div className="stat-card-value green">{Object.values(submissions).filter(s => s.status !== 'error' && s.status !== 'none').length}</div>
+                      </div>
+                      <div className="stat-card">
+                        <div className="stat-card-label"><span className="status-dot" style={{ background: 'var(--accent-red)' }}></span>Error</div>
+                        <div className="stat-card-value red">{Object.values(submissions).filter(s => s.status === 'error').length}</div>
+                      </div>
+                      <div className="stat-card">
+                        <div className="stat-card-label"><span className="status-dot" style={{ background: 'var(--accent-gray)' }}></span>Not run yet</div>
+                        <div className="stat-card-value">{Object.values(submissions).filter(s => s.status === 'none').length}</div>
+                      </div>
                     </>
                   )}
                 </div>
@@ -528,6 +579,11 @@ const saveTeacherEdit = async (studentName) => {
                           style={{ background: sub.status === 'error' ? 'var(--accent-red)' : sub.status === 'none' ? 'var(--accent-gray)' : 'var(--accent-green)' }}
                         ></span>
                         <span className="student-name">{name}</span>
+                        {!(roomMode === 'assessment' && totalQuestions > 0) && (
+                          <span className={`status-badge ${sub.status === 'error' ? 'error' : sub.status === 'none' ? 'none' : 'ok'}`}>
+                            {sub.status === 'error' ? 'Error' : sub.status === 'none' ? 'Not run yet' : 'Success'}
+                          </span>
+                        )}
                         {roomMode === 'assessment' && totalQuestions > 0 && (() => {
                           const results = sub.question_results || {}
                           const correctCount = Object.values(results).filter(v => v === true).length

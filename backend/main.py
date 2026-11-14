@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 import requests
 
-PISTON_URL = os.environ.get("PISTON_URL", "http://80.225.240.5:2000")
+PISTON_URL = os.environ.get("PISTON_URL", "http://3.111.53.231:2000")
 import json
 from database import engine, Base
 import random
